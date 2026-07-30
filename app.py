@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
+    page_title="Sistem Informasi RENCANG Fakultas Kedokteran Unpad",
     page_icon="🏥",
     layout="wide",
 )
@@ -141,7 +141,7 @@ st.markdown(
     </style>
     <div class="header-container">
         <img src="{LOGO_SRC}" width="70" style="object-fit: contain;">
-        <div class="header-title">Sistem Manajemen Data Terintegrasi FK UNPAD</div>
+        <div class="header-title">Sistem Informasi RENCANG </div>
     </div>
     """,
     unsafe_allow_html=True,
