@@ -253,10 +253,10 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Fungsi pembersih angka presisi
+# Fungsi pembersih angka presisi mutlak
 def parse_realisasi_value(val):
     s = str(val).strip()
-    if not s or s.lower() == 'nan':
+    if not s or s.lower() == 'nan' or s == '-':
         return 0.0
     s_clean = s.replace('Rp', '').replace('rp', '').strip()
     s_clean = s_clean.replace(',', '')
@@ -266,13 +266,13 @@ def parse_realisasi_value(val):
     except:
         return 0.0
 
-# Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12 [Kolom M9], BZ=77, CA=78)
+# Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12 [Kolom M9], BZ=77, CA=78 secara mutlak)
 def load_data_verifikator():
     if not URL_VERIF:
         return pd.DataFrame()
     try:
         df_raw = pd.read_csv(URL_VERIF, header=None, dtype=str)
-        # Target indeks mutlak: D=3, F=5, M=12 (Realisasi), BZ=77, CA=78
+        # Indeks Kolom Verifikator: D=3, F=5, M=12 (Realisasi M9), BZ=77, CA=78
         target_indices_verif = [3, 5, 12, 77, 78]
         valid_indices = [i for i in target_indices_verif if i < len(df_raw.columns)]
         
@@ -292,13 +292,13 @@ def load_data_verifikator():
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
-        # Format nilai pada kolom realisasi (Kolom M) agar seragam berawalan "Rp"
+        # Format nilai pada kolom realisasi (Kolom M) agar seragam berawalan "Rp" dengan pemisah titik
         for col in df.columns:
             if any(k in col.lower() for k in ["nominal", "realisasi", "jumlah", "biaya"]):
                 def format_rp(val):
                     num = parse_realisasi_value(val)
-                    if num == 0.0 and str(val).strip() in ["", "nan"]:
-                        return ""
+                    if num == 0.0 and str(val).strip() in ["", "nan", "-"]:
+                        return "Rp 0"
                     return f"Rp {num:,.0f}".replace(",", ".")
                 df[col] = df[col].apply(format_rp)
 
