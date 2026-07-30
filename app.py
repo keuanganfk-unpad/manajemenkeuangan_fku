@@ -303,7 +303,6 @@ def load_data_rekap_prodi():
         return pd.DataFrame()
     try:
         df_raw = pd.read_csv(URL_SPTJB, header=None, dtype=str)
-        # Kolom J adalah index 9, Kolom T adalah index 19 (berdasarkan baris header ke-9 / index 8)
         if len(df_raw.columns) > 19:
             df_rekap = df_raw.iloc[9:, [9, 19]].copy()
             prodi_header = str(df_raw.iloc[8, 9]).strip() if pd.notna(df_raw.iloc[8, 9]) else "Program Studi"
@@ -449,7 +448,6 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
             prodi_c = df_rekap_raw.columns[0]
             nominal_c = df_rekap_raw.columns[1]
 
-            # Standardisasi nama prodi/kategori (PSPD, PSKH, PPDS, dll)
             def standard_prodi(val):
                 v = str(val).strip().upper()
                 if not v or v == 'NAN':
@@ -470,24 +468,28 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             summary_df = df_rekap_raw.groupby("PRODI_GROUP").agg(
                 Jumlah_Ajuan=("PRODI_GROUP", 'count'),
-                Total_Nominal=(nominal_c, 'sum')
+                Total_Nominal_Num=(nominal_c, 'sum')
             ).reset_index()
 
             summary_df = summary_df.sort_values(by="Jumlah_Ajuan", ascending=False).reset_index(drop=True)
-            summary_df.columns = ["Program Studi / Kategori", "Jumlah Ajuan", "Total Nominal (Rp)"]
+            
+            # Membuat salinan dataframe dengan format Rupiah untuk tabel tampilan
+            summary_table_display = summary_df.copy()
+            summary_table_display["Total_Nominal_Num"] = summary_table_display["Total_Nominal_Num"].apply(lambda x: f"Rp {x:,.0f}".replace(",", "."))
+            summary_table_display.columns = ["Program Studi / Kategori", "Jumlah Ajuan", "Total Nominal (Rp)"]
 
             st.markdown("### 📋 Tabel Rekapitulasi per Program Studi")
-            st.dataframe(summary_df, use_container_width=True, hide_index=True)
+            st.dataframe(summary_table_display, use_container_width=True, hide_index=True)
             
             st.markdown("---")
             col_g1, col_g2 = st.columns(2)
             with col_g1:
                 st.markdown("### **Grafik Jumlah Ajuan per Prodi**")
-                st.bar_chart(summary_df.set_index("Program Studi / Kategori")['Jumlah_Ajuan'])
+                st.bar_chart(summary_df.set_index("PRODI_GROUP")['Jumlah_Ajuan'])
             
             with col_g2:
                 st.markdown("### **Grafik Total Nominal per Prodi**")
-                st.bar_chart(summary_df.set_index("Program Studi / Kategori")['Total Nominal (Rp)'])
+                st.bar_chart(summary_df.set_index("PRODI_GROUP")['Total_Nominal_Num'])
         except Exception as e:
             st.info(f"⚠️ Gagal memproses rekapitulasi data prodi: {e}")
     else:
