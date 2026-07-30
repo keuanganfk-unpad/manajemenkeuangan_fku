@@ -421,60 +421,45 @@ if menu == "🏠 Home / Beranda":
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### ⚡ **Akses Cepat Fitur Utama (Sesuai Hak Akses Anda)**")
-    
-    col_btn1, col_btn2 = st.columns(2)
-    
-    with col_btn1:
-        if st.button("📋 Buka Menu Pengelolaan Data", use_container_width=True):
-            if st.session_state.current_role == "verifikator":
-                st.warning("⚠️ Akun Anda adalah Tim Verifikator. Akses menu pengelolaan data khusus untuk Staf/Admin.")
-            elif st.session_state.current_role in ["admin", "user"]:
-                st.success("✅ Mengarahkan ke menu Lihat & Cari Data...")
-                time.sleep(0.8)
-                st.rerun()
-            else:
-                st.error("❌ Akses ditolak: Status Hak Akses (Role) Anda tidak valid atau tidak dikenali.")
-
-    with col_btn2:
-        if st.button("✔️ Buka Panel Verifikasi SPTJB", use_container_width=True):
-            if st.session_state.current_role == "verifikator" or st.session_state.current_role == "admin":
-                st.success("✅ Mengarahkan ke Panel Verifikator...")
-                time.sleep(0.8)
-                st.rerun()
-            elif st.session_state.current_role == "user":
-                st.warning("⚠️ Akses Terbatas: Akun Staf/User umum tidak memiliki hak akses khusus ke Panel Verifikator.")
-            else:
-                st.error("❌ Akses ditolak: Pengguna tidak dikenali.")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 🧭 **Panduan Navigasi & Fitur Utama**")
+    st.markdown("### 🧭 **Panduan & Akses Cepat Fitur Utama (Bisa Di-klik)**")
     
     col_f1, col_f2 = st.columns(2)
+    
     with col_f1:
-        st.markdown(
-            """
-            <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; height: 100%;">
-                <h4 style="color: #1e3a8a; margin-top: 0;">📋 Pengelolaan Data Dosen & Staff</h4>
-                <p style="color: #475569; font-size: 0.95rem; line-height: 1.5;">
-                    Gunakan menu di sidebar untuk melakukan pencarian data civitas, menambahkan data baru, memperbarui informasi profil, menghapus data, hingga mengunduh laporan langsung dalam format Excel secara mudah.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        with st.container(border=True):
+            st.markdown("#### 📋 Pengelolaan Data Dosen & Staff")
+            st.markdown(
+                "Gunakan fitur ini untuk melakukan pencarian data civitas, menambahkan data baru, "
+                "memperbarui informasi profil, menghapus data, hingga mengunduh laporan langsung "
+                "dalam format Excel secara mudah."
+            )
+            if st.button("🚀 Akses Pengelolaan Data", use_container_width=True):
+                if st.session_state.current_role == "verifikator":
+                    st.warning("⚠️ Akun Anda adalah Tim Verifikator. Akses menu pengelolaan data khusus untuk Staf/Admin.")
+                elif st.session_state.current_role in ["admin", "user"]:
+                    st.success("✅ Mengarahkan ke menu Lihat & Cari Data...")
+                    time.sleep(0.8)
+                    st.rerun()
+                else:
+                    st.error("❌ Akses ditolak: Hak Akses (Role) Anda tidak valid.")
+
     with col_f2:
-        st.markdown(
-            """
-            <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; height: 100%;">
-                <h4 style="color: #047857; margin-top: 0;">✔️ Panel Verifikasi & Cek Dokumen</h4>
-                <p style="color: #475569; font-size: 0.95rem; line-height: 1.5;">
-                    Khusus untuk Tim Verifikator, menu ini menyajikan rekam jejak SPTJB lengkap dengan akses tautan dokumen langsung, checklist verifikasi, serta fitur rincian data interaktif untuk transparansi keuangan.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        with st.container(border=True):
+            st.markdown("#### ✔️ Panel Verifikasi & Cek Dokumen")
+            st.markdown(
+                "Khusus untuk Tim Verifikator, menu ini menyajikan rekam jejak SPTJB lengkap "
+                "dengan akses tautan dokumen langsung, checklist verifikasi, serta fitur rincian data "
+                "interaktif untuk transparansi keuangan."
+            )
+            if st.button("🚀 Akses Panel Verifikasi", use_container_width=True):
+                if st.session_state.current_role == "verifikator" or st.session_state.current_role == "admin":
+                    st.success("✅ Mengarahkan ke Panel Verifikator...")
+                    time.sleep(0.8)
+                    st.rerun()
+                elif st.session_state.current_role == "user":
+                    st.warning("⚠️ Akses Terbatas: Akun Staf/User umum tidak memiliki hak akses khusus ke Panel Verifikator.")
+                else:
+                    st.error("❌ Akses ditolak: Pengguna tidak dikenali.")
 
 elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     st.markdown(
