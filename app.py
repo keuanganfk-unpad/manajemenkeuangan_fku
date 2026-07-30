@@ -260,22 +260,32 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12, BZ=77, CA=78 dari baris header ke-9)
+# Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12, BZ=77, CA=78 secara mutlak)
 def load_data_verifikator():
     if not URL_VERIF:
         return pd.DataFrame()
     try:
-        df = pd.read_csv(URL_VERIF, header=8, dtype=str)
-        df.columns = df.columns.str.strip()
+        # Baca tanpa header dulu untuk memastikan baris data terbaca sempurna
+        df_raw = pd.read_csv(URL_VERIF, header=None, dtype=str)
         
+        # Ambil header dari baris ke-9 (index 8) atau buat aman langsung ambil indeks kolom
+        # Kolom D (index 3), F (index 5), M (index 12), BZ (index 77), CA (index 78)
         target_indices_verif = [3, 5, 12, 77, 78]
-        valid_indices = [i for i in target_indices_verif if i < len(df.columns)]
-        if valid_indices:
-            df = df.iloc[:, valid_indices]
+        valid_indices = [i for i in target_indices_verif if i < len(df_raw.columns)]
+        
+        if not valid_indices:
+            return pd.DataFrame()
+            
+        df = df_raw.iloc[9:, valid_indices].copy() # Data dimulai dari baris ke-10 (index 9)
+        
+        # Berikan nama kolom sementara berdasarkan header baris ke-9 jika ada
+        headers = []
+        for i in valid_indices:
+            h_val = str(df_raw.iloc[8, i]).strip() if pd.notna(df_raw.iloc[8, i]) else f"Kolom_{i}"
+            headers.append(h_val)
+        df.columns = headers
 
-        cols_to_keep = [col for col in df.columns if not any(kw in col.lower() for kw in ["status", "verifikasi", "anggaran"])]
-        df = df[cols_to_keep]
-
+        # Bersihkan nama kolom duplikat
         cols = pd.Series(df.columns)
         for dup in cols[cols.duplicated()].unique(): 
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
@@ -283,13 +293,13 @@ def load_data_verifikator():
 
         df = df.dropna(how='all').reset_index(drop=True)
 
-        # Menyisipkan nomor urut otomatis di sebelah kiri kolom pertama
+        # Sisipkan nomor urut otomatis di sebelah kiri
         df.insert(0, "No.", range(1, len(df) + 1))
 
-        # Menambahkan kolom Checklist di sebelah kanan kolom perencanaan/siat
+        # Sisipkan kolom Checklist di sebelah kanan kolom perencanaan/siat/proses
         target_col_idx = -1
         for idx, col_name in enumerate(df.columns):
-            if any(k in col_name.lower() for k in ["siat", "perencanaan", "proses"]):
+            if any(k in col_name.lower() for k in ["siat", "perencanaan", "proses", "link", "url"]):
                 target_col_idx = idx
                 break
         
