@@ -107,15 +107,14 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (STICKY HEADER & SUBHEADER)
+# CSS KHUSUS
 # ==========================================
 st.markdown(
     f"""
     <style>
-    /* Header Utama */
     div[data-testid="stVerticalBlock"] > div:first-of-type {{
         position: sticky;
-        top: 0rem; 
+        top: 2.875rem; 
         z-index: 999;
         background-color: var(--background-color);
         padding-top: 10px;
@@ -147,19 +146,7 @@ st.markdown(
         font-weight: 500;
     }}
     .block-container {{
-        padding-top: 1rem !important;
-    }}
-    
-    /* Kontainer Sticky untuk Subheader / Judul Halaman & Metrik */
-    .sticky-wrapper {{
-        position: sticky;
-        top: 5.5rem;
-        z-index: 998;
-        background-color: var(--background-color);
-        padding-top: 10px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #e5e7eb;
-        margin-bottom: 15px;
+        padding-top: 2rem !important;
     }}
     </style>
     <div class="header-container">
@@ -222,14 +209,17 @@ def load_data_staff():
 
 def load_data_sptjb():
     try:
+        # Header di baris ke-9 (index 8)
         df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
         df.columns = df.columns.str.strip()
         
+        # Kolom C=2, E=4, G=6, J=9, K=10, S=18, T=19, CG=84, CI=86, CJ=87
         target_indices = [2, 4, 6, 9, 10, 18, 19, 84, 86, 87]
         valid_indices = [i for i in target_indices if i < len(df.columns)]
         if valid_indices:
             df = df.iloc[:, valid_indices]
 
+        # Membersihkan nama kolom duplikat agar unik
         cols = pd.Series(df.columns)
         for dup in cols[cols.duplicated()].unique(): 
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
@@ -258,6 +248,7 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
+# Khusus memuat data Verifikator (Baris 9 / index 8, Kolom D, F, I, M, BZ, CA)
 def load_data_verifikator():
     try:
         df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
@@ -367,16 +358,11 @@ def clean_val(val):
 # KONTEN UTAMA APLIKASI
 # ==========================================
 if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
-    st.markdown(
-        f"""
-        <div class="sticky-wrapper">
-            <h2 style="margin:0; padding:0; font-size: 1.75rem;">✔️ Panel Khusus Verifikator SPTJB</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Total Data Verifikasi SPTJB: <b>{len(df_aktif)}</b></p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
+    st.subheader("✔️ Panel Khusus Verifikator SPTJB")
+    st.markdown("Data bersumber dari Google Sheets SPTJB (Baris 9: Kolom D, F, I, M, BZ, CA).")
+    st.metric("Total Data Verifikasi SPTJB", len(df_aktif))
+    st.markdown("---")
+
     # Grafik Ringkasan per Prodi
     st.markdown("### 📊 Grafik Ringkasan per Program Studi (Prodi)")
     if len(df_aktif) > 0:
@@ -450,15 +436,9 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     )
 
 elif menu == "📋 Lihat & Cari Data":
-    st.markdown(
-        f"""
-        <div class="sticky-wrapper">
-            <h2 style="margin:0; padding:0; font-size: 1.75rem;">🔍 Pencarian & Filter Data {kategori_nama}</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Total Data {kategori_nama} Tercatat: <b>{len(df_aktif)}</b></p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.subheader(f"🔍 Pencarian & Filter Data {kategori_nama}")
+    st.metric(f"Total Data {kategori_nama} Tercatat", len(df_aktif))
+    st.markdown("---")
 
     if kategori_nama == "SPTJB":
         keyword = st.text_input("Cari SPTJB (berdasarkan kata kunci):", placeholder="Ketik di sini...")
