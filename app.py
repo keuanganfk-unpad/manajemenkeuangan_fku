@@ -78,7 +78,7 @@ if not st.session_state.logged_in:
 # ==========================================
 # LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
 # ==========================================
-URL_ASLI = "MASUKKAN_LINK_GOOGLE_SHEETS_ANDA_DI_SINI"
+URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 
 def convert_sheets_url(url):
     if "export?format=csv" in url:
