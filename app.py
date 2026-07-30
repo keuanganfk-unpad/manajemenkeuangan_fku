@@ -153,7 +153,7 @@ st.markdown(
         <img src="{LOGO_SRC}" width="70" style="object-fit: contain;">
         <div class="header-text">
             <div class="header-title">Sistem Informasi RENCANG</div>
-            <div class="header-subtitle">Perencanaan dan Keuangan FK Unpad</div>
+            <div class="header-subtitle">Perencanaan dan Keuangan Fakultas Kedokteran Unpad</div>
         </div>
     </div>
     """,
