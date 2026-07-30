@@ -297,7 +297,7 @@ def load_data_verifikator():
         st.error(f"Gagal memuat data Verifikator Bu Wadek: {e}")
         return pd.DataFrame()
 
-# Khusus memuat rekapitulasi dari Google Sheets SPTJB berdasarkan User di Kolom S (index 18) dan Nominal di Kolom T (index 19)
+# Khusus memuat rekapitulasi dari Google Sheets SPTJB berdasarkan Nama User (Kolom S9 = index 18) & Realisasi (Kolom T9 = index 19)
 def load_data_rekap_user():
     if not URL_SPTJB:
         return pd.DataFrame()
@@ -305,9 +305,9 @@ def load_data_rekap_user():
         df_raw = pd.read_csv(URL_SPTJB, header=None, dtype=str)
         if len(df_raw.columns) > 19:
             df_rekap = df_raw.iloc[9:, [18, 19]].copy()
-            user_header = str(df_raw.iloc[8, 18]).strip() if pd.notna(df_raw.iloc[8, 18]) else "User"
-            nominal_header = str(df_raw.iloc[8, 19]).strip() if pd.notna(df_raw.iloc[8, 19]) else "Jumlah Nominal"
-            df_rekap.columns = [user_header, nominal_header]
+            user_header = str(df_raw.iloc[8, 18]).strip() if pd.notna(df_raw.iloc[8, 18]) else "Nama User"
+            realisasi_header = str(df_raw.iloc[8, 19]).strip() if pd.notna(df_raw.iloc[8, 19]) else "Realisasi"
+            df_rekap.columns = [user_header, realisasi_header]
             df_rekap = df_rekap.dropna(subset=[user_header])
             return df_rekap.fillna("")
         return pd.DataFrame()
@@ -435,8 +435,8 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
     st.markdown(
         """
         <div class="sticky-wrapper">
-            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi & Jumlah Ajuan Berdasarkan User (Kolom S9 & T9)</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Jika nama user sama, total nominal dijumlahkan secara otomatis</p>
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Berdasarkan Nama User & Akumulasi Realisasi</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Kolom S9 (Nama User) & Kolom T9 (Realisasi) dengan penjumlahan otomatis</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -446,42 +446,49 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
     if len(df_rekap_raw) > 0:
         try:
             user_c = df_rekap_raw.columns[0]
-            nominal_c = df_rekap_raw.columns[1]
+            realisasi_c = df_rekap_raw.columns[1]
 
             def clean_user_name(val):
-                v = str(val).strip()
-                if not v or v.lower() == 'nan':
-                    return "Tidak Diketahui"
+                v = str(val).strip().upper()
+                if not v or v == 'NAN':
+                    return "TIDAK DIKETAHUI"
                 return v
 
-            df_rekap_raw["USER_GROUP"] = df_rekap_raw[user_c].apply(clean_user_name)
-            df_rekap_raw[nominal_c] = df_rekap_raw[nominal_c].astype(str).str.replace(r'[^0-9.]', '', regex=True)
-            df_rekap_raw[nominal_c] = pd.to_numeric(df_rekap_raw[nominal_c], errors='coerce').fillna(0) * 1000
+            df_rekap_raw["USER_CLEAN"] = df_rekap_raw[user_c].apply(clean_user_name)
+            
+            # Membersihkan koma pemisah ribuan pada format realisasi (misal "1,295,000" -> 1295000)
+            df_rekap_raw[realisasi_c] = (
+                df_rekap_raw[realisasi_c]
+                .astype(str)
+                .str.replace(',', '', regex=False)
+                .str.replace(r'[^0-9.]', '', regex=True)
+            )
+            df_rekap_raw[realisasi_c] = pd.to_numeric(df_rekap_raw[realisasi_c], errors='coerce').fillna(0)
 
-            # Rumus Fungsi: Groupby User dan Sum Nominal serta Count Jumlah Ajuan
-            summary_df = df_rekap_raw.groupby("USER_GROUP").agg(
-                Jumlah_Ajuan=("USER_GROUP", 'count'),
-                Total_Nominal_Num=(nominal_c, 'sum')
+            # Logika Akumulasi: Jika Nama User sama, Jumlah Ajuan dihitung dan Realisasi dijumlahkan totalnya
+            summary_df = df_rekap_raw.groupby("USER_CLEAN").agg(
+                Jumlah_Ajuan=("USER_CLEAN", 'count'),
+                Total_Realisasi_Num=(realisasi_c, 'sum')
             ).reset_index()
 
-            summary_df = summary_df.sort_values(by="Jumlah_Ajuan", ascending=False).reset_index(drop=True)
+            summary_df = summary_df.sort_values(by="Total_Realisasi_Num", ascending=False).reset_index(drop=True)
             
             summary_table_display = summary_df.copy()
-            summary_table_display["Total_Nominal_Num"] = summary_table_display["Total_Nominal_Num"].apply(lambda x: f"Rp {x:,.0f}".replace(",", "."))
-            summary_table_display.columns = ["Nama User", "Jumlah Ajuan", "Total Nominal (Rp Real)"]
+            summary_table_display["Total_Realisasi_Num"] = summary_table_display["Total_Realisasi_Num"].apply(lambda x: f"Rp {x:,.0f}".replace(",", "."))
+            summary_table_display.columns = ["Nama User", "Jumlah Ajuan", "Total Realisasi (Rp)"]
 
-            st.markdown("### 📋 Tabel Rekapitulasi Berdasarkan User (Akumulasi Nominal Sama)")
+            st.markdown("### 📋 Tabel Rekapitulasi Akumulasi Realisasi per User")
             st.dataframe(summary_table_display, use_container_width=True, hide_index=True)
             
             st.markdown("---")
             col_g1, col_g2 = st.columns(2)
             with col_g1:
                 st.markdown("### **Grafik Jumlah Ajuan per User**")
-                st.bar_chart(summary_df.set_index("USER_GROUP")['Jumlah_Ajuan'])
+                st.bar_chart(summary_df.set_index("USER_CLEAN")['Jumlah_Ajuan'])
             
             with col_g2:
-                st.markdown("### **Grafik Total Nominal Akumulasi per User**")
-                st.bar_chart(summary_df.set_index("USER_GROUP")['Total_Nominal_Num'])
+                st.markdown("### **Grafik Total Akumulasi Realisasi per User**")
+                st.bar_chart(summary_df.set_index("USER_CLEAN")['Total_Realisasi_Num'])
         except Exception as e:
             st.info(f"⚠️ Gagal memproses rekapitulasi data user: {e}")
     else:
