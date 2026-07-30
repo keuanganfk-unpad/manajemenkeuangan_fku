@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
+    page_title="Sistem Informasi Rencang FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
