@@ -321,41 +321,6 @@ def load_data_verifikator():
         st.error(f"Gagal memuat data Verifikator Bu Wadek: {e}")
         return pd.DataFrame()
 
-# Khusus memuat rekapitulasi dari Google Sheets SPTJB berdasarkan Nama User & Realisasi
-def load_data_rekap_user():
-    if not URL_SPTJB:
-        return pd.DataFrame()
-    try:
-        df_raw = pd.read_csv(URL_SPTJB, header=None, dtype=str)
-        
-        user_col_idx = -1
-        realisasi_col_idx = -1
-        header_row_idx = -1
-
-        for r_idx in range(min(15, len(df_raw))):
-            row_vals = [str(val).strip().upper() for val in df_raw.iloc[r_idx].values]
-            for c_idx, val in enumerate(row_vals):
-                if "NAMA USER" in val or val == "NAMA USER":
-                    user_col_idx = c_idx
-                    header_row_idx = r_idx
-                elif "REALISASI" in val or val == "REALISASI":
-                    realisasi_col_idx = c_idx
-                    if header_row_idx == -1:
-                        header_row_idx = r_idx
-            if user_col_idx != -1 and realisasi_col_idx != -1:
-                break
-
-        if user_col_idx == -1: user_col_idx = 18
-        if realisasi_col_idx == -1: realisasi_col_idx = 19
-        if header_row_idx == -1: header_row_idx = 8
-
-        df_rekap = df_raw.iloc[header_row_idx + 1:, [user_col_idx, realisasi_col_idx]].copy()
-        df_rekap.columns = ["NAMA_USER", "REALISASI"]
-        df_rekap = df_rekap.dropna(subset=["NAMA_USER"])
-        return df_rekap.fillna("")
-    except Exception as e:
-        return pd.DataFrame()
-
 def simpan_backup():
     st.session_state.df_dosen.to_csv("Backup_Data_Dosen.csv", index=False)
     st.session_state.df_staff.to_csv("Backup_Data_Staff.csv", index=False)
@@ -386,8 +351,7 @@ if st.session_state.current_role == "verifikator":
     st.sidebar.radio("👥 Pilih Kategori Data:", [kategori_data])
     st.sidebar.markdown("---")
     menu = st.sidebar.selectbox("Pilih Menu Navigasi", [
-        "🔍 Verifikasi & Cek Dokumen SPTJB", 
-        "📊 Jumlah Ajuan masing masing prodi"
+        "🔍 Verifikasi & Cek Dokumen SPTJB"
     ])
     st.sidebar.markdown("---")
     st.sidebar.info("Anda berada di **Mode Verifikator Khusus**")
@@ -497,77 +461,6 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
             )
     except Exception as e:
         pass
-
-elif menu == "📊 Jumlah Ajuan masing masing prodi":
-    st.markdown(
-        """
-        <div class="sticky-wrapper">
-            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Akumulasi Realisasi Berdasarkan Nama User</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Penjumlahan total realisasi otomatis per user secara presisi</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    df_rekap_raw = load_data_rekap_user()
-    if len(df_rekap_raw) > 0:
-        try:
-            def clean_user_name(val):
-                v = str(val).strip().upper()
-                if not v or v == 'NAN' or v == '-':
-                    return "TIDAK DIKETAHUI"
-                return v
-
-            df_rekap_raw["USER_CLEAN"] = df_rekap_raw["NAMA_USER"].apply(clean_user_name)
-            df_rekap_raw["REALISASI_NUM"] = df_rekap_raw["REALISASI"].apply(parse_realisasi_value)
-
-            summary_df = df_rekap_raw.groupby("USER_CLEAN").agg(
-                Jumlah_Ajuan=("USER_CLEAN", 'count'),
-                Total_Realisasi_Num=("REALISASI_NUM", 'sum')
-            ).reset_index()
-
-            summary_df = summary_df.sort_values(by="Total_Realisasi_Num", ascending=False).reset_index(drop=True)
-            
-            jumlah_n_prodi = len(summary_df)
-            grand_total_rekap = summary_df["Total_Realisasi_Num"].sum()
-            formatted_grand_total = f"Rp {grand_total_rekap:,.0f}".replace(",", ".")
-
-            st.markdown(
-                f"""
-                <div style="display: flex; gap: 20px; margin-bottom: 15px;">
-                    <div style="flex: 1; background-color: #eff6ff; padding: 12px 20px; border-radius: 8px; border: 1px solid #bfdbfe;">
-                        <span style="font-size: 0.95rem; color: #1e40af; font-weight: 600;">Jumlah Prodi / User (N):</span><br>
-                        <span style="font-size: 1.4rem; color: #1d4ed8; font-weight: 700;">{jumlah_n_prodi} Prodi / User</span>
-                    </div>
-                    <div style="flex: 1; background-color: #f0fdf4; padding: 12px 20px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                        <span style="font-size: 0.95rem; color: #166534; font-weight: 600;">Grand Total Realisasi:</span><br>
-                        <span style="font-size: 1.4rem; color: #15803d; font-weight: 700;">{formatted_grand_total}</span>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            summary_table_display = summary_df.copy()
-            summary_table_display["Total_Realisasi_Num"] = summary_table_display["Total_Realisasi_Num"].apply(lambda x: f"Rp {x:,.0f}".replace(",", "."))
-            summary_table_display.columns = ["Nama User", "Jumlah Ajuan", "Total Realisasi (Rp)"]
-
-            st.markdown("### 📋 Tabel Rekapitulasi Akumulasi Realisasi per User")
-            st.dataframe(summary_table_display, use_container_width=True, hide_index=True)
-            
-            st.markdown("---")
-            col_g1, col_g2 = st.columns(2)
-            with col_g1:
-                st.markdown("### **Grafik Jumlah Ajuan per User**")
-                st.bar_chart(summary_df.set_index("USER_CLEAN")['Jumlah_Ajuan'])
-            
-            with col_g2:
-                st.markdown("### **Grafik Total Akumulasi Realisasi per User**")
-                st.bar_chart(summary_df.set_index("USER_CLEAN")['Total_Realisasi_Num'])
-        except Exception as e:
-            st.info(f"⚠️ Gagal memproses rekapitulasi data user: {e}")
-    else:
-        st.warning("Data Google Sheet SPTJB kosong atau kolom 'NAMA USER' dan 'REALISASI' tidak ditemukan.")
 
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
