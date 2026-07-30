@@ -78,7 +78,8 @@ if not st.session_state.logged_in:
 # LINK GOOGLE SHEETS TERPISAH
 # ==========================================
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
-URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
+URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv
+"
 
 def convert_sheets_url(url):
     if not url or "MASUKKAN_" in url:
@@ -278,14 +279,14 @@ def load_data_verifikator():
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
-        # Format nilai kolom realisasi/nominal agar berawalan "Rp"
+        # Format nilai kolom realisasi/nominal agar berawalan "Rp" dengan pemisah ribuan titik
         for col in df.columns:
             if any(k in col.lower() for k in ["nominal", "realisasi", "jumlah", "biaya"]):
                 def format_rp(val):
                     s = str(val).strip()
                     if not s or s.lower() == 'nan':
                         return ""
-                    s_clean = re.sub(r'[^0-9.-]', '', s.replace(',', ''))
+                    s_clean = re.sub(r'[^0-9.]', '', s.replace(',', ''))
                     try:
                         num = float(s_clean)
                         return f"Rp {num:,.0f}".replace(",", ".")
@@ -464,9 +465,8 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         column_config=column_config_dict
     )
 
-    # --- FITUR TOTAL KESELURUHAN REALISASI DI BAWAH TABEL ---
+    # --- FITUR TOTAL KESELURUHAN REALISASI DI BAWAH TABEL (DIPERBAIKI) ---
     try:
-        # Mencari kolom yang berisi realisasi atau nominal pada dataframe verifikasi
         target_realisasi_col = None
         for col in edited_df_verif.columns:
             if any(k in col.lower() for k in ["nominal", "realisasi", "jumlah", "biaya"]):
@@ -476,9 +476,13 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         if target_realisasi_col:
             total_sum = 0.0
             for val in edited_df_verif[target_realisasi_col].values:
-                s = str(val).replace('Rp', '').replace('.', '').replace(',', '').strip()
+                s = str(val).strip()
+                if not s or s.lower() == 'nan':
+                    continue
+                # Membersihkan string "Rp ", titik pemisah ribuan, dan koma secara akurat
+                s_clean = s.replace('Rp', '').replace('.', '').replace(',', '').strip()
                 try:
-                    total_sum += float(s)
+                    total_sum += float(s_clean)
                 except:
                     pass
             
@@ -521,8 +525,9 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
                 s = str(val).strip()
                 if not s or s.lower() == 'nan':
                     return 0.0
-                s_clean = s.replace(',', '')
-                s_clean = re.sub(r'[^0-9.-]', '', s_clean)
+                # Membersihkan string agar tidak terjadi kesalahan desimal
+                s_clean = s.replace('.', '').replace(',', '').strip()
+                s_clean = re.sub(r'[^0-9-]', '', s_clean)
                 try:
                     return float(s_clean)
                 except:
