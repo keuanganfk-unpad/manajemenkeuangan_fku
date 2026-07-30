@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Informasi Rencang FK UNPAD",
+    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -49,7 +49,7 @@ if not st.session_state.logged_in:
         st.markdown(
             """
             <div style="text-align: center; padding: 20px; border: 1px solid #d1d5db; border-radius: 10px; background-color: #f9fafb;">
-                <h2>🔐Login Rencang</h2>
+                <h2>🔐 Login Rencang<br>FK Unpad</h2>
                 <p style="color: gray;">Silakan masukkan User ID dan Password Anda</p>
             </div>
             """, 
@@ -404,14 +404,37 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
                 default=False
             )
 
-    st.markdown("**Daftar Tabel Verifikasi SPTJB:**")
-    edited_df_verif = st.data_editor(
+    st.markdown("**Daftar Tabel Verifikasi SPTJB (Klik baris pada tabel untuk melihat detail):**")
+    
+    # Menggunakan st.dataframe dengan fitur seleksi baris interaktif
+    event = st.dataframe(
         df_verif,
         use_container_width=True,
-        height=500,
+        height=400,
         hide_index=True,
-        column_config=column_config_dict
+        column_config=column_config_dict,
+        selection_mode="single-row",
+        on_select="rerun"
     )
+
+    # --- FITUR TAMPIL DETAIL BARIS KETIKA DI-KLIK ---
+    try:
+        selected_rows = event.selection.rows
+        if selected_rows:
+            selected_idx = selected_rows[0]
+            selected_data = df_verif.iloc[selected_idx]
+            
+            st.markdown("---")
+            st.markdown("### 📌 Detail Lengkap Baris yang Dipilih")
+            
+            # Tampilkan detail dalam bentuk card/tabel vertikal yang rapi
+            detail_df = pd.DataFrame({
+                "Kolom / Atribut": selected_data.index,
+                "Isi Data": selected_data.values
+            })
+            st.dataframe(detail_df, use_container_width=True, hide_index=True)
+    except Exception as e:
+        pass
 
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
