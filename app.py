@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Informasi Rencang FK UNPAD",
+    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -78,7 +78,8 @@ if not st.session_state.logged_in:
 # ==========================================
 # LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
 # ==========================================
-URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
+URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv
+"
 
 def convert_sheets_url(url):
     if "export?format=csv" in url:
@@ -107,15 +108,15 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (STICKY HEADER & TITLE)
+# CSS KHUSUS (STICKY HEADER & SUBHEADER)
 # ==========================================
 st.markdown(
     f"""
     <style>
-    /* Membuat header utama dan area sticky teratas tidak ikut tergulung */
+    /* Header Utama */
     div[data-testid="stVerticalBlock"] > div:first-of-type {{
         position: sticky;
-        top: 2.875rem; 
+        top: 0rem; 
         z-index: 999;
         background-color: var(--background-color);
         padding-top: 10px;
@@ -147,13 +148,14 @@ st.markdown(
         font-weight: 500;
     }}
     .block-container {{
-        padding-top: 2rem !important;
+        padding-top: 1rem !important;
     }}
-    /* Membuat bagian judul halaman & metrik ikut sticky di bawah header utama */
-    .sticky-subheader-container {{
+    
+    /* Kontainer Sticky untuk Subheader / Judul Halaman & Metrik */
+    .sticky-wrapper {{
         position: sticky;
-        top: 8.5rem;
-        z-index: 988;
+        top: 5.5rem;
+        z-index: 998;
         background-color: var(--background-color);
         padding-top: 10px;
         padding-bottom: 10px;
@@ -366,60 +368,16 @@ def clean_val(val):
 # KONTEN UTAMA APLIKASI
 # ==========================================
 if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
-    # Membungkus judul dan metrik dalam kontainer sticky agar tidak ikut ter-scroll ke atas
     st.markdown(
-        """
-        <div class="sticky-subheader-container">
+        f"""
+        <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">✔️ Panel Khusus Verifikator SPTJB</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Total Data Verifikasi SPTJB: <b>{len(df_aktif)}</b></p>
         </div>
         """,
         unsafe_allow_html=True
     )
-    st.metric("Total Data Verifikasi SPTJB", len(df_aktif))
-    st.markdown("---")
-
-    # Grafik Ringkasan per Prodi
-    st.markdown("### 📊 Grafik Ringkasan per Program Studi (Prodi)")
-    if len(df_aktif) > 0:
-        prodi_col = None
-        nominal_col = None
-        for col in df_aktif.columns:
-            col_l = col.lower()
-            if any(k in col_l for k in ["prodi", "departemen", "unit", "bagian", "program"]):
-                prodi_col = col
-            if any(k in col_l for k in ["nominal", "jumlah", "biaya", "pagu", "rp"]):
-                nominal_col = col
-                
-        if not prodi_col and len(df_aktif.columns) > 1:
-            prodi_col = df_aktif.columns[1]
-        if not nominal_col and len(df_aktif.columns) > 2:
-            nominal_col = df_aktif.columns[-2]
-
-        if prodi_col:
-            try:
-                df_chart = df_aktif.copy()
-                if nominal_col:
-                    df_chart[nominal_col] = df_chart[nominal_col].astype(str).str.replace(r'[^0-9.]', '', regex=True)
-                    df_chart[nominal_col] = pd.to_numeric(df_chart[nominal_col], errors='coerce').fillna(0)
-                    summary_df = df_chart.groupby(prodi_col).agg(
-                        Jumlah_Ajuan=(prodi_col, 'count'),
-                        Total_Nominal=(nominal_col, 'sum')
-                    ).reset_index()
-                else:
-                    summary_df = df_chart.groupby(prodi_col).size().reset_index(name='Jumlah_Ajuan')
-
-                col_g1, col_g2 = st.columns(2)
-                with col_g1:
-                    st.markdown("**Jumlah Ajuan per Prodi**")
-                    st.bar_chart(summary_df.set_index(prodi_col)['Jumlah_Ajuan'])
-                if nominal_col and 'Total_Nominal' in summary_df.columns:
-                    with col_g2:
-                        st.markdown("**Total Nominal (Rp) per Prodi**")
-                        st.bar_chart(summary_df.set_index(prodi_col)['Total_Nominal'])
-            except:
-                pass
-    st.markdown("---")
-
+    
     keyword_verif = st.text_input("Cari data verifikasi SPTJB:", placeholder="Ketik kata kunci...")
     df_verif = df_aktif.copy()
     if keyword_verif and len(df_verif.columns) > 0:
@@ -453,14 +411,13 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
         f"""
-        <div class="sticky-subheader-container">
+        <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">🔍 Pencarian & Filter Data {kategori_nama}</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Total Data {kategori_nama} Tercatat: <b>{len(df_aktif)}</b></p>
         </div>
         """,
         unsafe_allow_html=True
     )
-    st.metric(f"Total Data {kategori_nama} Tercatat", len(df_aktif))
-    st.markdown("---")
 
     if kategori_nama == "SPTJB":
         keyword = st.text_input("Cari SPTJB (berdasarkan kata kunci):", placeholder="Ketik di sini...")
