@@ -78,7 +78,7 @@ if not st.session_state.logged_in:
 # ==========================================
 # LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
 # ==========================================
-URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
+URL_ASLI = "MASUKKAN_LINK_GOOGLE_SHEETS_ANDA_DI_SINI"
 
 def convert_sheets_url(url):
     if "export?format=csv" in url:
@@ -196,10 +196,11 @@ def load_data_staff():
 
 def load_data_sptjb():
     try:
-        # Mengubah header menjadi baris ke-10 (index 10 / baris ke-11 di Excel/Sheets) agar data terbaca dengan benar
-        df = pd.read_csv(URL_SPTJB, header=10, dtype=str)
+        # Header di baris ke-9 (index 8)
+        df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
         df.columns = df.columns.str.strip()
         
+        # Kolom C=2, E=4, G=6, J=9, K=10, S=18, T=19, CG=84, CI=86, CJ=87
         target_indices = [2, 4, 6, 9, 10, 18, 19, 84, 86, 87]
         valid_indices = [i for i in target_indices if i < len(df.columns)]
         if valid_indices:
@@ -228,17 +229,16 @@ def load_data_sptjb():
             if "nominal" in col.lower():
                 df[col] = df[col].astype(str).str.replace(r'\.0$', '', regex=True).replace('nan', '')
 
-        # Hapus baris yang seluruhnya kosong / NaN
         df = df.dropna(how='all')
         return df.fillna("")
     except Exception as e:
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Khusus memuat data Verifikator (Baris 11 / index 10, Kolom D, F, I, M, BZ, CA)
+# Khusus memuat data Verifikator (Baris 9 / index 8, Kolom D, F, I, M, BZ, CA)
 def load_data_verifikator():
     try:
-        df = pd.read_csv(URL_SPTJB, header=10, dtype=str)
+        df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
         df.columns = df.columns.str.strip()
         
         target_indices_verif = [3, 5, 8, 12, 77, 78]
@@ -254,7 +254,6 @@ def load_data_verifikator():
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
-        # Menambahkan kolom Checklist di sebelah kanan kolom perencanaan/siat
         target_col_idx = -1
         for idx, col_name in enumerate(df.columns):
             if any(k in col_name.lower() for k in ["siat", "perencanaan", "proses"]):
@@ -347,7 +346,7 @@ def clean_val(val):
 # ==========================================
 if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     st.subheader("✔️ Panel Khusus Verifikator SPTJB")
-    st.markdown("Data bersumber dari Google Sheets SPTJB (Baris 11: Kolom D, F, I, M, BZ, CA).")
+    st.markdown("Data bersumber dari Google Sheets SPTJB (Baris 9: Kolom D, F, I, M, BZ, CA).")
     st.metric("Total Data Verifikasi SPTJB", len(df_aktif))
     st.markdown("---")
 
