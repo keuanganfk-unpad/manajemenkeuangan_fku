@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
+    page_title="Sistem Informasi Rencang FK Unpad",
     page_icon="🏥",
     layout="wide",
 )
@@ -107,11 +107,12 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS
+# CSS KHUSUS (STICKY HEADER & TITLE)
 # ==========================================
 st.markdown(
     f"""
     <style>
+    /* Membuat header utama dan area sticky teratas tidak ikut tergulung */
     div[data-testid="stVerticalBlock"] > div:first-of-type {{
         position: sticky;
         top: 2.875rem; 
@@ -148,12 +149,23 @@ st.markdown(
     .block-container {{
         padding-top: 2rem !important;
     }}
+    /* Membuat bagian judul halaman & metrik ikut sticky di bawah header utama */
+    .sticky-subheader-container {{
+        position: sticky;
+        top: 8.5rem;
+        z-index: 988;
+        background-color: var(--background-color);
+        padding-top: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 15px;
+    }}
     </style>
     <div class="header-container">
         <img src="{LOGO_SRC}" width="70" style="object-fit: contain;">
         <div class="header-text">
             <div class="header-title">Sistem Informasi RENCANG</div>
-            <div class="header-subtitle">Perencanaan dan Keuangan Fakultas Kedokteran Unpad</div>
+            <div class="header-subtitle">Perencanaan dan Keuangan FK Unpad</div>
         </div>
     </div>
     """,
@@ -209,17 +221,14 @@ def load_data_staff():
 
 def load_data_sptjb():
     try:
-        # Header di baris ke-9 (index 8)
         df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
         df.columns = df.columns.str.strip()
         
-        # Kolom C=2, E=4, G=6, J=9, K=10, S=18, T=19, CG=84, CI=86, CJ=87
         target_indices = [2, 4, 6, 9, 10, 18, 19, 84, 86, 87]
         valid_indices = [i for i in target_indices if i < len(df.columns)]
         if valid_indices:
             df = df.iloc[:, valid_indices]
 
-        # Membersihkan nama kolom duplikat agar unik
         cols = pd.Series(df.columns)
         for dup in cols[cols.duplicated()].unique(): 
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
@@ -248,7 +257,6 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Khusus memuat data Verifikator (Baris 9 / index 8, Kolom D, F, I, M, BZ, CA)
 def load_data_verifikator():
     try:
         df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
@@ -358,8 +366,15 @@ def clean_val(val):
 # KONTEN UTAMA APLIKASI
 # ==========================================
 if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
-    st.subheader("✔️ Panel Khusus Verifikator SPTJB")
-    st.markdown("Data bersumber dari Google Sheets SPTJB (Baris 9: Kolom D, F, I, M, BZ, CA).")
+    # Membungkus judul dan metrik dalam kontainer sticky agar tidak ikut ter-scroll ke atas
+    st.markdown(
+        """
+        <div class="sticky-subheader-container">
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">✔️ Panel Khusus Verifikator SPTJB</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     st.metric("Total Data Verifikasi SPTJB", len(df_aktif))
     st.markdown("---")
 
@@ -436,7 +451,14 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     )
 
 elif menu == "📋 Lihat & Cari Data":
-    st.subheader(f"🔍 Pencarian & Filter Data {kategori_nama}")
+    st.markdown(
+        f"""
+        <div class="sticky-subheader-container">
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">🔍 Pencarian & Filter Data {kategori_nama}</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     st.metric(f"Total Data {kategori_nama} Tercatat", len(df_aktif))
     st.markdown("---")
 
