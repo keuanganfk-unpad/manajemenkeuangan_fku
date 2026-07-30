@@ -377,6 +377,48 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         unsafe_allow_html=True
     )
     
+    # Grafik Ringkasan per Prodi
+    st.markdown("### 📊 Grafik Ringkasan per Program Studi (Prodi)")
+    if len(df_aktif) > 0:
+        prodi_col = None
+        nominal_col = None
+        for col in df_aktif.columns:
+            col_l = col.lower()
+            if any(k in col_l for k in ["prodi", "departemen", "unit", "bagian", "program"]):
+                prodi_col = col
+            if any(k in col_l for k in ["nominal", "jumlah", "biaya", "pagu", "rp"]):
+                nominal_col = col
+                
+        if not prodi_col and len(df_aktif.columns) > 1:
+            prodi_col = df_aktif.columns[1]
+        if not nominal_col and len(df_aktif.columns) > 2:
+            nominal_col = df_aktif.columns[-2]
+
+        if prodi_col:
+            try:
+                df_chart = df_aktif.copy()
+                if nominal_col:
+                    df_chart[nominal_col] = df_chart[nominal_col].astype(str).str.replace(r'[^0-9.]', '', regex=True)
+                    df_chart[nominal_col] = pd.to_numeric(df_chart[nominal_col], errors='coerce').fillna(0)
+                    summary_df = df_chart.groupby(prodi_col).agg(
+                        Jumlah_Ajuan=(prodi_col, 'count'),
+                        Total_Nominal=(nominal_col, 'sum')
+                    ).reset_index()
+                else:
+                    summary_df = df_chart.groupby(prodi_col).size().reset_index(name='Jumlah_Ajuan')
+
+                col_g1, col_g2 = st.columns(2)
+                with col_g1:
+                    st.markdown("**Jumlah Ajuan per Prodi**")
+                    st.bar_chart(summary_df.set_index(prodi_col)['Jumlah_Ajuan'])
+                if nominal_col and 'Total_Nominal' in summary_df.columns:
+                    with col_g2:
+                        st.markdown("**Total Nominal (Rp) per Prodi**")
+                        st.bar_chart(summary_df.set_index(prodi_col)['Total_Nominal'])
+            except:
+                pass
+    st.markdown("---")
+
     keyword_verif = st.text_input("Cari data verifikasi SPTJB:", placeholder="Ketik kata kunci...")
     df_verif = df_aktif.copy()
     if keyword_verif and len(df_verif.columns) > 0:
