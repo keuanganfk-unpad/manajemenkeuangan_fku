@@ -31,7 +31,6 @@ DATABASE_USER = {
     "verifikator": {"password": "verif2026", "nama": "Tim Verifikator SPTJB", "role": "verifikator"}
 }
 
-# Inisialisasi status login di session_state
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "current_user" not in st.session_state:
@@ -78,10 +77,7 @@ if not st.session_state.logged_in:
 # ==========================================
 # LINK GOOGLE SHEETS TERPISAH
 # ==========================================
-# 1. Link untuk menu Nomor SPTJB (Umum)
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
-
-# 2. Link untuk menu Verifikator SPTJB (Bu Wadek)
 URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 
 def convert_sheets_url(url):
@@ -114,18 +110,23 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (STICKY HEADER & SUBHEADER)
+# CSS KHUSUS (PERBAIKAN HEADER TERPOTONG)
 # ==========================================
 st.markdown(
     f"""
     <style>
+    /* Mengatur padding halaman agar header utama tampil utuh */
+    .block-container {{
+        padding-top: 2rem !important;
+    }}
+    
     /* Header Utama */
     div[data-testid="stVerticalBlock"] > div:first-of-type {{
         position: sticky;
-        top: 0rem; 
+        top: -1rem; 
         z-index: 999;
         background-color: var(--background-color);
-        padding-top: 10px;
+        padding-top: 15px;
         padding-bottom: 10px;
     }}
     .header-container {{
@@ -153,14 +154,11 @@ st.markdown(
         margin-top: 5px;
         font-weight: 500;
     }}
-    .block-container {{
-        padding-top: 1rem !important;
-    }}
     
     /* Kontainer Sticky untuk Subheader / Judul Halaman & Metrik */
     .sticky-wrapper {{
         position: sticky;
-        top: 5.5rem;
+        top: 6.5rem;
         z-index: 998;
         background-color: var(--background-color);
         padding-top: 10px;
@@ -267,33 +265,37 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Khusus memuat data Verifikator (Baris 9 / index 8, Kolom D, F, M, BZ, CA -> Index: 3, 5, 12, 77, 78)
+# Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12, BZ=77, CA=78 secara mutlak)
 def load_data_verifikator():
     if not URL_VERIF:
         return pd.DataFrame()
     try:
-        df = pd.read_csv(URL_VERIF, header=8, dtype=str)
-        df.columns = df.columns.str.strip()
-        
-        # Mapping kolom Excel: D=3, F=5, M=12, BZ=77, CA=78 (berdasarkan baris header ke-9)
+        df_raw = pd.read_csv(URL_VERIF, header=None, dtype=str)
         target_indices_verif = [3, 5, 12, 77, 78]
-        valid_indices = [i for i in target_indices_verif if i < len(df.columns)]
-        if valid_indices:
-            df = df.iloc[:, valid_indices]
-
-        # Membersihkan kolom yang mengandung kata status, verifikasi, atau anggaran jika ada
-        cols_to_keep = [col for col in df.columns if not any(kw in col.lower() for kw in ["status", "verifikasi", "anggaran"])]
-        df = df[cols_to_keep]
+        valid_indices = [i for i in target_indices_verif if i < len(df_raw.columns)]
+        
+        if not valid_indices:
+            return pd.DataFrame()
+            
+        df = df_raw.iloc[9:, valid_indices].copy()
+        
+        headers = []
+        for i in valid_indices:
+            h_val = str(df_raw.iloc[8, i]).strip() if pd.notna(df_raw.iloc[8, i]) else f"Kolom_{i}"
+            headers.append(h_val)
+        df.columns = headers
 
         cols = pd.Series(df.columns)
         for dup in cols[cols.duplicated()].unique(): 
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
-        # Menambahkan kolom Checklist di sebelah kanan kolom perencanaan/siat
+        df = df.dropna(how='all').reset_index(drop=True)
+        df.insert(0, "No.", range(1, len(df) + 1))
+
         target_col_idx = -1
         for idx, col_name in enumerate(df.columns):
-            if any(k in col_name.lower() for k in ["siat", "perencanaan", "proses"]):
+            if any(k in col_name.lower() for k in ["siat", "perencanaan", "proses", "link", "url"]):
                 target_col_idx = idx
                 break
         
@@ -302,7 +304,6 @@ def load_data_verifikator():
         else:
             df["Checklist"] = False
 
-        df = df.dropna(how='all')
         return df.fillna("")
     except Exception as e:
         st.error(f"Gagal memuat data Verifikator Bu Wadek: {e}")
