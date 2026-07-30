@@ -436,7 +436,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
         """
         <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Berdasarkan Nama User & Akumulasi Realisasi</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Kolom S9 (Nama User) & Kolom T9 (Realisasi) dengan penjumlahan otomatis</p>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Kolom S9 (Nama User) & Kolom T9 (Realisasi) dengan pembersihan format angka presisi</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -456,19 +456,24 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             df_rekap_raw["USER_CLEAN"] = df_rekap_raw[user_c].apply(clean_user_name)
             
-            # Membersihkan koma pemisah ribuan pada format realisasi (misal "1,295,000" -> 1295000)
-            df_rekap_raw[realisasi_c] = (
-                df_rekap_raw[realisasi_c]
-                .astype(str)
-                .str.replace(',', '', regex=False)
-                .str.replace(r'[^0-9.]', '', regex=True)
-            )
-            df_rekap_raw[realisasi_c] = pd.to_numeric(df_rekap_raw[realisasi_c], errors='coerce').fillna(0)
+            # Logika Pembersihan Angka Presisi: Menghilangkan koma ribuan agar terbaca secara tepat
+            def parse_realisasi(val):
+                s = str(val).strip()
+                if not s or s.lower() == 'nan':
+                    return 0.0
+                # Hapus karakter selain angka, titik, dan minus
+                s_clean = re.sub(r'[^0-9.-]', '', s.replace(',', ''))
+                try:
+                    return float(s_clean)
+                except:
+                    return 0.0
 
-            # Logika Akumulasi: Jika Nama User sama, Jumlah Ajuan dihitung dan Realisasi dijumlahkan totalnya
+            df_rekap_raw["REALISASI_NUM"] = df_rekap_raw[realisasi_c].apply(parse_realisasi)
+
+            # Logika Akumulasi: Groupby User, Hitung Jumlah Ajuan, dan Jumlahkan Total Realisasi
             summary_df = df_rekap_raw.groupby("USER_CLEAN").agg(
                 Jumlah_Ajuan=("USER_CLEAN", 'count'),
-                Total_Realisasi_Num=(realisasi_c, 'sum')
+                Total_Realisasi_Num=("REALISASI_NUM", 'sum')
             ).reset_index()
 
             summary_df = summary_df.sort_values(by="Total_Realisasi_Num", ascending=False).reset_index(drop=True)
