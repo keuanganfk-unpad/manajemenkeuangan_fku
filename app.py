@@ -1,3 +1,10 @@
+import pandas as pd
+import streamlit as st
+import os
+import time
+import io
+import base64
+import re
 st.markdown(
     """
     <style>
@@ -12,14 +19,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-import pandas as pd
-import streamlit as st
-import os
-import time
-import io
-import base64
-import re
-
 # ==========================================
 # KONFIGURASI HALAMAN
 # ==========================================
