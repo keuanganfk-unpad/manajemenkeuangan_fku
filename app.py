@@ -19,15 +19,16 @@ st.set_page_config(
 # DATABASE USER ID & PASSWORD
 # ==========================================
 DATABASE_USER = {
-    "adminfk": {"password": "admin2026", "nama": "Administrator FK Unpad"},
-    "asep": {"password": "asep123", "nama": "Asep Koswara"},
-    "cheppy": {"password": "cheppy123", "nama": "Cheppy Agustiana"},
-    "dede": {"password": "dede123", "nama": "Dede Nurdin"},
-    "deviyanti": {"password": "devi123", "nama": "Deviyanti"},
-    "erwin": {"password": "erwin123", "nama": "Erwin Muftiwijaya"},
-    "neneng": {"password": "neneng123", "nama": "Neneng Ratnasari Rosa"},
-    "nita": {"password": "nita123", "nama": "Nita Widyastuti"},
-    "yopi": {"password": "yopi123", "nama": "Yopi Taufik Limatranendra"}
+    "adminfk": {"password": "admin2026", "nama": "Administrator FK Unpad", "role": "admin"},
+    "asep": {"password": "asep123", "nama": "Asep Koswara", "role": "user"},
+    "cheppy": {"password": "cheppy123", "nama": "Cheppy Agustiana", "role": "user"},
+    "dede": {"password": "dede123", "nama": "Dede Nurdin", "role": "user"},
+    "deviyanti": {"password": "devi123", "nama": "Deviyanti", "role": "user"},
+    "erwin": {"password": "erwin123", "nama": "Erwin Muftiwijaya", "role": "user"},
+    "neneng": {"password": "neneng123", "nama": "Neneng Ratnasari Rosa", "role": "user"},
+    "nita": {"password": "nita123", "nama": "Nita Widyastuti", "role": "user"},
+    "yopi": {"password": "yopi123", "nama": "Yopi Taufik Limatranendra", "role": "user"},
+    "verifikator": {"password": "verif2026", "nama": "Tim Verifikator SPTJB", "role": "verifikator"}
 }
 
 # Inisialisasi status login di session_state
@@ -35,6 +36,8 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "current_user" not in st.session_state:
     st.session_state.current_user = ""
+if "current_role" not in st.session_state:
+    st.session_state.current_role = ""
 
 # ==========================================
 # HALAMAN LOGIN (USER ID & PASSWORD)
@@ -63,21 +66,20 @@ if not st.session_state.logged_in:
                 if input_user_id in DATABASE_USER and DATABASE_USER[input_user_id]["password"] == input_password:
                     st.session_state.logged_in = True
                     st.session_state.current_user = DATABASE_USER[input_user_id]["nama"]
+                    st.session_state.current_role = DATABASE_USER[input_user_id]["role"]
                     st.success(f"Login berhasil! Selamat datang, {DATABASE_USER[input_user_id]['nama']}")
                     time.sleep(1)
                     st.rerun()
                 else:
                     st.error("❌ User ID atau Password salah! Periksa kembali data Anda.")
     
-    # Hentikan eksekusi kode di bawah jika belum login
     st.stop()
 
 # ==========================================
 # LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
 # ==========================================
-URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
+URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 
-# Konversi otomatis link biasa menjadi link CSV otomatis
 def convert_sheets_url(url):
     if "export?format=csv" in url:
         return url
@@ -105,7 +107,7 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (STICKY HEADER & DESAIN JUDUL)
+# CSS KHUSUS
 # ==========================================
 st.markdown(
     f"""
@@ -224,6 +226,42 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
+# Khusus memuat data Verifikator (Baris 9 / index 8, Kolom D, F, I, M, BZ, CA) tanpa kolom status, verifikasi, atau anggaran
+def load_data_verifikator():
+    try:
+        df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
+        df.columns = df.columns.str.strip()
+        
+        target_indices_verif = [3, 5, 8, 12, 77, 78]
+        valid_indices = [i for i in target_indices_verif if i < len(df.columns)]
+        if valid_indices:
+            df = df.iloc[:, valid_indices]
+
+        cols_to_keep = [col for col in df.columns if not any(kw in col.lower() for kw in ["status", "verifikasi", "anggaran"])]
+        df = df[cols_to_keep]
+
+        cols = pd.Series(df.columns)
+        for dup in cols[cols.duplicated()].unique(): 
+            cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
+        df.columns = cols
+
+        # Menambahkan kolom Checklist di sebelah kanan kolom perencanaan/siat
+        target_col_idx = -1
+        for idx, col_name in enumerate(df.columns):
+            if any(k in col_name.lower() for k in ["siat", "perencanaan", "proses"]):
+                target_col_idx = idx
+                break
+        
+        if target_col_idx != -1:
+            df.insert(target_col_idx + 1, "Checklist", False)
+        else:
+            df["Checklist"] = False
+
+        return df.fillna("")
+    except Exception as e:
+        st.error(f"Gagal memuat data Verifikator SPTJB: {e}")
+        return pd.DataFrame()
+
 def simpan_backup():
     st.session_state.df_dosen.to_csv("Backup_Data_Dosen.csv", index=False)
     st.session_state.df_staff.to_csv("Backup_Data_Staff.csv", index=False)
@@ -234,48 +272,59 @@ if "df_staff" not in st.session_state:
     st.session_state.df_staff = load_data_staff()
 if "df_sptjb" not in st.session_state:
     st.session_state.df_sptjb = load_data_sptjb()
+if "df_verif_sptjb" not in st.session_state:
+    st.session_state.df_verif_sptjb = load_data_verifikator()
 
 # ==========================================
-# SIDEBAR & NAVIGASI (SETELAH LOGIN)
+# SIDEBAR & NAVIGASI
 # ==========================================
 st.sidebar.success(f"👤 Login as: **{st.session_state.current_user}**")
 if st.sidebar.button("🚪 Logout", use_container_width=True):
     st.session_state.logged_in = False
     st.session_state.current_user = ""
+    st.session_state.current_role = ""
     st.rerun()
 
 st.sidebar.markdown("---")
 
-kategori_data = st.sidebar.radio(
-    "👥 Pilih Kategori Data:",
-    ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "📄 Nomor SPTJB"]
-)
+if st.session_state.current_role == "verifikator":
+    kategori_data = "✔️ Verifikator SPTJB"
+    st.sidebar.radio("👥 Pilih Kategori Data:", [kategori_data])
+    st.sidebar.markdown("---")
+    menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["🔍 Verifikasi & Cek Dokumen SPTJB"])
+    st.sidebar.markdown("---")
+    st.sidebar.info("Anda berada di **Mode Verifikator Khusus**")
+    
+    df_aktif = st.session_state.df_verif_sptjb
+    kategori_nama = "Verifikasi SPTJB"
 
-st.sidebar.markdown("---")
-
-if kategori_data == "📄 Nomor SPTJB":
-    menu = st.sidebar.selectbox(
-        "Pilih Menu Navigasi",
-        ["📋 Lihat & Cari Data"]
-    )
 else:
-    menu = st.sidebar.selectbox(
-        "Pilih Menu Navigasi",
-        ["📋 Lihat & Cari Data", "➕ Tambah Data Baru", "✏️ Edit Data", "🗑️ Hapus Data", "📥 Unduh / Simpan ke Excel"],
+    kategori_data = st.sidebar.radio(
+        "👥 Pilih Kategori Data:",
+        ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "📄 Nomor SPTJB"]
     )
+    st.sidebar.markdown("---")
 
-st.sidebar.markdown("---")
-st.sidebar.info(f"Anda sedang berada di mode **{kategori_data}**")
+    if kategori_data == "📄 Nomor SPTJB":
+        menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["📋 Lihat & Cari Data"])
+    else:
+        menu = st.sidebar.selectbox(
+            "Pilih Menu Navigasi",
+            ["📋 Lihat & Cari Data", "➕ Tambah Data Baru", "✏️ Edit Data", "🗑️ Hapus Data", "📥 Unduh / Simpan ke Excel"],
+        )
 
-if kategori_data == "👨‍⚕️ Data Dosen":
-    df_aktif = st.session_state.df_dosen
-    kategori_nama = "Dosen"
-elif kategori_data == "👨‍💼 Data Staff":
-    df_aktif = st.session_state.df_staff
-    kategori_nama = "Staff"
-else:
-    df_aktif = st.session_state.df_sptjb
-    kategori_nama = "SPTJB"
+    st.sidebar.markdown("---")
+    st.sidebar.info(f"Anda sedang berada di mode **{kategori_data}**")
+
+    if kategori_data == "👨‍⚕️ Data Dosen":
+        df_aktif = st.session_state.df_dosen
+        kategori_nama = "Dosen"
+    elif kategori_data == "👨‍💼 Data Staff":
+        df_aktif = st.session_state.df_staff
+        kategori_nama = "Staff"
+    else:
+        df_aktif = st.session_state.df_sptjb
+        kategori_nama = "SPTJB"
 
 def clean_val(val):
     if pd.isna(val) or str(val).lower() == 'nan': return ""
@@ -283,7 +332,48 @@ def clean_val(val):
     if val_str.endswith('.0'): val_str = val_str[:-2]
     return val_str
 
-if menu == "📋 Lihat & Cari Data":
+# ==========================================
+# KONTEN UTAMA APLIKASI
+# ==========================================
+if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
+    st.subheader("✔️ Panel Khusus Verifikator SPTJB")
+    st.markdown("")
+    st.metric("Total Data Verifikasi SPTJB", len(df_aktif))
+    st.markdown("---")
+
+    keyword_verif = st.text_input("Cari data verifikasi SPTJB:", placeholder="Ketik kata kunci...")
+    df_verif = df_aktif.copy()
+    if keyword_verif and len(df_verif.columns) > 0:
+        mask = df_verif.apply(lambda row: row.astype(str).str.contains(keyword_verif, case=False, na=False).any(), axis=1)
+        df_verif = df_verif[mask]
+
+    column_config_dict = {}
+    for col in df_verif.columns:
+        if any(k in col.lower() for k in ["link", "dokumen", "url", "file", "upload"]):
+            column_config_dict[col] = st.column_config.LinkColumn(
+                col,
+                help="Klik untuk membuka tautan dokumen upload",
+                display_text="🔗 Buka Dokumen"
+            )
+        elif col == "Checklist":
+            column_config_dict[col] = st.column_config.CheckboxColumn(
+                "Checklist",
+                help="Centang untuk menandai verifikasi",
+                default=False
+            )
+
+    st.markdown("**Daftar Tabel Verifikasi SPTJB:**")
+    
+    # Menggunakan st.data_editor agar kolom Checklist bisa dicentang secara interaktif oleh user
+    edited_df_verif = st.data_editor(
+        df_verif,
+        use_container_width=True,
+        height=500,
+        hide_index=True,
+        column_config=column_config_dict
+    )
+
+elif menu == "📋 Lihat & Cari Data":
     st.subheader(f"🔍 Pencarian & Filter Data {kategori_nama}")
     st.metric(f"Total Data {kategori_nama} Tercatat", len(df_aktif))
     st.markdown("---")
