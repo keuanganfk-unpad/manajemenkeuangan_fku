@@ -91,54 +91,6 @@ st.markdown(
 EXCEL_DOSEN = "DATA DOSEN FK UNPAD_Pak Dede.xlsx"
 EXCEL_STAFF = "DATA TENDIK FK UNPAD_Pak Dede.xlsx"
 
-LIST_PRODI_UNIT = [
-    "Pilih Prodi / Unit...",
-    "Program Studi Sarjana Kedokteran",
-    "Program Studi Profesi Dokter",
-    "Program Studi PPDH (Dokter Hewan)",
-    "Program Studi Magister (S2) Ilmu Kedokteran Dasar",
-    "Program Studi Magister (S2) Kebidanan",
-    "Program Studi Doktor (S3) Ilmu Kedokteran",
-    "Departemen Anatomi",
-    "Departemen Fisiologi",
-    "Departemen Biokimia",
-    "Departemen Farmakologi",
-    "Departemen Patologi Anatomi",
-    "Departemen Mikrobiologi",
-    "Departemen Parasitologi",
-    "Departemen Ilmu Penyakit Dalam",
-    "Departemen Ilmu Bedah",
-    "Departemen Ilmu Kesehatan Anak",
-    "Departemen Obgin",
-    "Departemen Neurologi",
-    "Departemen Psikiatri",
-    "Departemen Kardiologi",
-    "Departemen Pulmonologi",
-    "Departemen THT-KL",
-    "Departemen Mata",
-    "Departemen Kulit & Kelamin",
-    "Departemen Anestesiologi",
-    "Departemen Radiologi",
-    "Departemen Ilmu Bedah Saraf",
-    "Departemen Orthopaedi & Traumatologi",
-    "Bagian Akademik & Kemahasiswaan",
-    "Bagian Keuangan & Kepegawaian (SDM)",
-    "Bagian Umum & Perlengkapan",
-    "Dekanat / Pimpinan Fakultas"
-]
-
-LIST_USER = [
-    "Pilih User / Pengaju...",
-    "Asep Koswara",
-    "Cheppy Agustiana",
-    "Dede Nurdin",
-    "Deviyanti",
-    "Erwin Muftiwijaya",
-    "Neneng Ratnasari Rosa",
-    "Nita Widyastuti",
-    "Yopi Taufik Limatranendra"
-]
-
 def load_data_dosen():
     if os.path.exists("Backup_Data_Dosen.csv"):
         try:
@@ -236,10 +188,18 @@ kategori_data = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 
-menu = st.sidebar.selectbox(
-    "Pilih Menu Navigasi",
-    ["📋 Lihat & Cari Data", "➕ Tambah Data Baru", "✏️ Edit Data", "🗑️ Hapus Data", "📥 Unduh / Simpan ke Excel"],
-)
+# Mengatur menu khusus SPTJB (Hanya Lihat & Cari Data saja)
+if kategori_data == "📄 Nomor SPTJB":
+    menu = st.sidebar.selectbox(
+        "Pilih Menu Navigasi",
+        ["📋 Lihat & Cari Data"]
+    )
+else:
+    menu = st.sidebar.selectbox(
+        "Pilih Menu Navigasi",
+        ["📋 Lihat & Cari Data", "➕ Tambah Data Baru", "✏️ Edit Data", "🗑️ Hapus Data", "📥 Unduh / Simpan ke Excel"],
+    )
+
 st.sidebar.markdown("---")
 st.sidebar.info(f"Anda sedang berada di mode **{kategori_data}**")
 
@@ -273,7 +233,6 @@ if menu == "📋 Lihat & Cari Data":
         
         st.markdown(f"**Menampilkan {len(filtered_df)} data:**")
         
-        # Deteksi kolom link dokumen (biasanya kolom paling ujung atau yang mengandung kata link/dokumen/url)
         column_config_dict = {}
         for col in filtered_df.columns:
             if any(k in col.lower() for k in ["link", "dokumen", "url", "file"]):
@@ -333,34 +292,29 @@ elif menu == "➕ Tambah Data Baru":
                 jenis_kelamin = st.selectbox("Jenis Kelamin", ["Laki-Laki", "Perempuan"])
                 hp = st.text_input("Nomor HP")
                 email = st.text_input("Email")
-        elif kategori_nama == "SPTJB":
-            st.info("Form penambahan langsung ke Google Sheets dapat dilakukan melalui halaman Google Sheets Anda.")
                 
-        if kategori_nama != "SPTJB":
-            submit_button = st.form_submit_button(f"💾 Simpan Data {kategori_nama}", use_container_width=True)
-            if submit_button:
-                if not nama:
-                    st.warning("⚠️ Nama Lengkap wajib diisi!")
-                else:
-                    if kategori_nama == "Dosen":
-                        new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NIK": str(nik), "NAMA": nama, "DEPARTEMEN": departemen, "INSTANSI INDUK": instansi, "STATUS AKTIF/TIDAK AKTIF": status_aktif, "JENIS KELAMIN": jenis_kelamin, "Tempat Lahir": tmp_lahir, "Tanggal Lahir": tgl_lahir, "USIA": "-", "Alamat Rumah": alamat, "Email": email, "HP": str(hp)}
-                        st.session_state.df_dosen = pd.concat([st.session_state.df_dosen, pd.DataFrame([new_data])], ignore_index=True)
-                        simpan_backup()
-                    elif kategori_nama == "Staff":
-                        new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NAMA": nama, "JABATAN": jabatan, "UNIT KERJA": unit_kerja, "STATUS PEGAWAI": status_pegawai, "JENIS KELAMIN": jenis_kelamin, "HP": str(hp), "Email": email}
-                        st.session_state.df_staff = pd.concat([st.session_state.df_staff, pd.DataFrame([new_data])], ignore_index=True)
-                        simpan_backup()
-                    
-                    st.success(f"🎉 Data {kategori_nama} **{nama}** berhasil ditambahkan!")
-                    time.sleep(1.5)
-                    st.rerun()
+        submit_button = st.form_submit_button(f"💾 Simpan Data {kategori_nama}", use_container_width=True)
+        if submit_button:
+            if not nama:
+                st.warning("⚠️ Nama Lengkap wajib diisi!")
+            else:
+                if kategori_nama == "Dosen":
+                    new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NIK": str(nik), "NAMA": nama, "DEPARTEMEN": departemen, "INSTANSI INDUK": instansi, "STATUS AKTIF/TIDAK AKTIF": status_aktif, "JENIS KELAMIN": jenis_kelamin, "Tempat Lahir": tmp_lahir, "Tanggal Lahir": tgl_lahir, "USIA": "-", "Alamat Rumah": alamat, "Email": email, "HP": str(hp)}
+                    st.session_state.df_dosen = pd.concat([st.session_state.df_dosen, pd.DataFrame([new_data])], ignore_index=True)
+                    simpan_backup()
+                elif kategori_nama == "Staff":
+                    new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NAMA": nama, "JABATAN": jabatan, "UNIT KERJA": unit_kerja, "STATUS PEGAWAI": status_pegawai, "JENIS KELAMIN": jenis_kelamin, "HP": str(hp), "Email": email}
+                    st.session_state.df_staff = pd.concat([st.session_state.df_staff, pd.DataFrame([new_data])], ignore_index=True)
+                    simpan_backup()
+                
+                st.success(f"🎉 Data {kategori_nama} **{nama}** berhasil ditambahkan!")
+                time.sleep(1.5)
+                st.rerun()
 
 elif menu == "✏️ Edit Data":
     st.subheader(f"✏️ Edit Data {kategori_nama}")
     if len(df_aktif) == 0:
         st.info(f"Belum ada data {kategori_nama} untuk diedit.")
-    elif kategori_nama == "SPTJB":
-        st.info("Penyuntingan data SPTJB disarankan langsung melalui file Google Sheets Anda.")
     else:
         pilihan = df_aktif["NAMA"].dropna().tolist()
         to_edit = st.selectbox(f"Pilih Nama {kategori_nama} yang ingin diedit:", pilihan)
@@ -418,8 +372,6 @@ elif menu == "🗑️ Hapus Data":
     st.subheader(f"🗑️ Penghapusan Data {kategori_nama}")
     if len(df_aktif) == 0:
         st.info(f"Tidak ada data {kategori_nama} untuk dihapus.")
-    elif kategori_nama == "SPTJB":
-        st.info("Penghapusan data SPTJB disarankan langsung melalui file Google Sheets Anda.")
     else:
         pilihan = df_aktif["NAMA"].dropna().tolist()
         to_delete = st.selectbox(f"Pilih Nama {kategori_nama} yang ingin dihapus:", pilihan)
