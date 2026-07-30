@@ -404,35 +404,34 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
                 default=False
             )
 
-    st.markdown("**Daftar Tabel Verifikasi SPTJB (Klik baris pada tabel untuk melihat detail):**")
+    st.markdown("**Daftar Tabel Verifikasi SPTJB (Klik pada baris tabel untuk melihat rincian):**")
     
-    # Menggunakan st.dataframe dengan fitur seleksi baris interaktif
+    # Tabel interaktif dengan pemilihan baris yang stabil
     event = st.dataframe(
         df_verif,
         use_container_width=True,
         height=400,
         hide_index=True,
         column_config=column_config_dict,
-        selection_mode="single-row",
-        on_select="rerun"
+        on_select="rerun",
+        selection_mode="single-row"
     )
 
-    # --- FITUR TAMPIL DETAIL BARIS KETIKA DI-KLIK ---
+    # --- MENAMPILKAN DETAIL BARIS KETIKA DI-KLIK ---
     try:
         selected_rows = event.selection.rows
         if selected_rows:
-            selected_idx = selected_rows[0]
-            selected_data = df_verif.iloc[selected_idx]
+            row_idx = selected_rows[0]
+            row_data = df_verif.iloc[row_idx]
             
             st.markdown("---")
-            st.markdown("### 📌 Detail Lengkap Baris yang Dipilih")
+            st.info(f"📌 **Detail Informasi Baris #{row_idx + 1} yang Dipilih:**")
             
-            # Tampilkan detail dalam bentuk card/tabel vertikal yang rapi
-            detail_df = pd.DataFrame({
-                "Kolom / Atribut": selected_data.index,
-                "Isi Data": selected_data.values
-            })
-            st.dataframe(detail_df, use_container_width=True, hide_index=True)
+            # Membuat tampilan rincian dalam grid kolom yang bersih
+            detail_cols = st.columns(2)
+            for i, (col_name, val) in enumerate(row_data.items()):
+                with detail_cols[i % 2]:
+                    st.text_input(label=str(col_name), value=str(val), disabled=True, key=f"detail_{row_idx}_{i}")
     except Exception as e:
         pass
 
