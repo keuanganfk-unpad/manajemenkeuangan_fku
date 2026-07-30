@@ -304,7 +304,6 @@ def load_data_rekap_user():
     try:
         df_raw = pd.read_csv(URL_SPTJB, header=None, dtype=str)
         if len(df_raw.columns) > 19:
-            # Kolom S adalah index 18, Kolom T adalah index 19 (berdasarkan baris header ke-9 / index 8)
             df_rekap = df_raw.iloc[9:, [18, 19]].copy()
             user_header = str(df_raw.iloc[8, 18]).strip() if pd.notna(df_raw.iloc[8, 18]) else "User"
             nominal_header = str(df_raw.iloc[8, 19]).strip() if pd.notna(df_raw.iloc[8, 19]) else "Jumlah Nominal"
@@ -436,8 +435,8 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
     st.markdown(
         """
         <div class="sticky-wrapper">
-            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi & Jumlah Ajuan Berdasarkan User (Kolom S9)</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Google Sheet SPTJB (Kolom S9: User & Kolom T9: Jumlah Nominal Real)</p>
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi & Jumlah Ajuan Berdasarkan User (Kolom S9 & T9)</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Jika nama user sama, total nominal dijumlahkan secara otomatis</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -459,6 +458,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
             df_rekap_raw[nominal_c] = df_rekap_raw[nominal_c].astype(str).str.replace(r'[^0-9.]', '', regex=True)
             df_rekap_raw[nominal_c] = pd.to_numeric(df_rekap_raw[nominal_c], errors='coerce').fillna(0) * 1000
 
+            # Rumus Fungsi: Groupby User dan Sum Nominal serta Count Jumlah Ajuan
             summary_df = df_rekap_raw.groupby("USER_GROUP").agg(
                 Jumlah_Ajuan=("USER_GROUP", 'count'),
                 Total_Nominal_Num=(nominal_c, 'sum')
@@ -470,7 +470,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
             summary_table_display["Total_Nominal_Num"] = summary_table_display["Total_Nominal_Num"].apply(lambda x: f"Rp {x:,.0f}".replace(",", "."))
             summary_table_display.columns = ["Nama User", "Jumlah Ajuan", "Total Nominal (Rp Real)"]
 
-            st.markdown("### 📋 Tabel Rekapitulasi Berdasarkan User")
+            st.markdown("### 📋 Tabel Rekapitulasi Berdasarkan User (Akumulasi Nominal Sama)")
             st.dataframe(summary_table_display, use_container_width=True, hide_index=True)
             
             st.markdown("---")
@@ -480,7 +480,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
                 st.bar_chart(summary_df.set_index("USER_GROUP")['Jumlah_Ajuan'])
             
             with col_g2:
-                st.markdown("### **Grafik Total Nominal Real per User**")
+                st.markdown("### **Grafik Total Nominal Akumulasi per User**")
                 st.bar_chart(summary_df.set_index("USER_GROUP")['Total_Nominal_Num'])
         except Exception as e:
             st.info(f"⚠️ Gagal memproses rekapitulasi data user: {e}")
