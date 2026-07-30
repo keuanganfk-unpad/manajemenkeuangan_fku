@@ -110,33 +110,25 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (SOLUSI TOTAL HEADER TERPOTONG)
+# CSS KHUSUS (MEMPERBAIKI TOTAL HEADER TERPOTONG)
 # ==========================================
 st.markdown(
     f"""
     <style>
-    /* Menghilangkan padding bawaan Streamlit di bagian paling atas */
+    /* Mengatur jarak aman di bagian atas agar header tidak terpotong oleh sistem Streamlit */
     .block-container {{
-        padding-top: 1rem !important;
+        padding-top: 2.5rem !important;
     }}
     
-    /* Header Utama agar sticky dan tidak terpotong */
-    div[data-testid="stVerticalBlock"] > div:first-of-type {{
-        position: sticky;
-        top: 0rem; 
-        z-index: 999;
-        background-color: var(--background-color);
-        padding-top: 15px;
-        padding-bottom: 10px;
-        margin-top: -15px;
-    }}
+    /* Header Utama dibuat statis aman tanpa terpotong */
     .header-container {{
         display: flex;
         align-items: center;
         gap: 20px;
         border-bottom: 1.5px solid #d1d5db;
         padding-bottom: 15px;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
+        margin-top: 10px;
     }}
     .header-text {{
         display: flex;
@@ -152,14 +144,14 @@ st.markdown(
     .header-subtitle {{
         font-size: 1.1rem;
         color: #6b7280;
-        margin-top: 2px;
+        margin-top: 4px;
         font-weight: 500;
     }}
     
     /* Kontainer Sticky untuk Subheader / Judul Halaman & Metrik */
     .sticky-wrapper {{
         position: sticky;
-        top: 6.5rem;
+        top: 0rem;
         z-index: 998;
         background-color: var(--background-color);
         padding-top: 10px;
