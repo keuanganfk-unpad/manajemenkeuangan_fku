@@ -110,24 +110,25 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (PERBAIKAN HEADER TERPOTONG)
+# CSS KHUSUS (SOLUSI TOTAL HEADER TERPOTONG)
 # ==========================================
 st.markdown(
     f"""
     <style>
-    /* Mengatur padding halaman agar header utama tampil utuh */
+    /* Menghilangkan padding bawaan Streamlit di bagian paling atas */
     .block-container {{
-        padding-top: 2rem !important;
+        padding-top: 1rem !important;
     }}
     
-    /* Header Utama */
+    /* Header Utama agar sticky dan tidak terpotong */
     div[data-testid="stVerticalBlock"] > div:first-of-type {{
         position: sticky;
-        top: -1rem; 
+        top: 0rem; 
         z-index: 999;
         background-color: var(--background-color);
         padding-top: 15px;
         padding-bottom: 10px;
+        margin-top: -15px;
     }}
     .header-container {{
         display: flex;
@@ -146,12 +147,12 @@ st.markdown(
         color: #2c3e50; 
         font-weight: 700;
         margin: 0;
-        line-height: 1.2;
+        line-height: 1.3;
     }}
     .header-subtitle {{
         font-size: 1.1rem;
         color: #6b7280;
-        margin-top: 5px;
+        margin-top: 2px;
         font-weight: 500;
     }}
     
