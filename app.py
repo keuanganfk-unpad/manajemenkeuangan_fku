@@ -76,11 +76,17 @@ if not st.session_state.logged_in:
     st.stop()
 
 # ==========================================
-# LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
+# LINK GOOGLE SHEETS TERPISAH
 # ==========================================
-URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
+# 1. Link untuk menu Nomor SPTJB (Umum)
+URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
+
+# 2. Link untuk menu Verifikator SPTJB (Khusus)
+URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 
 def convert_sheets_url(url):
+    if not url or "MASUKKAN_" in url:
+        return ""
     if "export?format=csv" in url:
         return url
     if "/edit" in url:
@@ -91,7 +97,8 @@ def convert_sheets_url(url):
         return f"{base_url}/export?format=csv"
     return url
 
-URL_SPTJB = convert_sheets_url(URL_ASLI)
+URL_SPTJB = convert_sheets_url(URL_ASLI_SPTJB)
+URL_VERIF = convert_sheets_url(URL_ASLI_VERIFIKATOR)
 
 # ==========================================
 # FUNGSI MEMBACA GAMBAR LOKAL (ANTI GAGAL)
@@ -107,14 +114,15 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS
+# CSS KHUSUS (STICKY HEADER & SUBHEADER)
 # ==========================================
 st.markdown(
     f"""
     <style>
+    /* Header Utama */
     div[data-testid="stVerticalBlock"] > div:first-of-type {{
         position: sticky;
-        top: 2.875rem; 
+        top: 0rem; 
         z-index: 999;
         background-color: var(--background-color);
         padding-top: 10px;
@@ -146,7 +154,19 @@ st.markdown(
         font-weight: 500;
     }}
     .block-container {{
-        padding-top: 2rem !important;
+        padding-top: 1rem !important;
+    }}
+    
+    /* Kontainer Sticky untuk Subheader / Judul Halaman & Metrik */
+    .sticky-wrapper {{
+        position: sticky;
+        top: 5.5rem;
+        z-index: 998;
+        background-color: var(--background-color);
+        padding-top: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 15px;
     }}
     </style>
     <div class="header-container">
@@ -208,18 +228,17 @@ def load_data_staff():
         return pd.DataFrame(columns=["No.", "NIP", "NAMA", "JABATAN", "UNIT KERJA", "STATUS PEGAWAI", "JENIS KELAMIN", "HP", "Email"])
 
 def load_data_sptjb():
+    if not URL_SPTJB:
+        return pd.DataFrame()
     try:
-        # Header di baris ke-9 (index 8)
         df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
         df.columns = df.columns.str.strip()
         
-        # Kolom C=2, E=4, G=6, J=9, K=10, S=18, T=19, CG=84, CI=86, CJ=87
         target_indices = [2, 4, 6, 9, 10, 18, 19, 84, 86, 87]
         valid_indices = [i for i in target_indices if i < len(df.columns)]
         if valid_indices:
             df = df.iloc[:, valid_indices]
 
-        # Membersihkan nama kolom duplikat agar unik
         cols = pd.Series(df.columns)
         for dup in cols[cols.duplicated()].unique(): 
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
@@ -248,10 +267,11 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Khusus memuat data Verifikator (Baris 9 / index 8, Kolom D, F, I, M, BZ, CA)
 def load_data_verifikator():
+    if not URL_VERIF:
+        return pd.DataFrame()
     try:
-        df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
+        df = pd.read_csv(URL_VERIF, header=8, dtype=str)
         df.columns = df.columns.str.strip()
         
         target_indices_verif = [3, 5, 8, 12, 77, 78]
@@ -358,53 +378,16 @@ def clean_val(val):
 # KONTEN UTAMA APLIKASI
 # ==========================================
 if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
-    st.subheader("✔️ Panel Khusus Verifikator SPTJB")
-    st.markdown("Data bersumber dari Google Sheets SPTJB (Baris 9: Kolom D, F, I, M, BZ, CA).")
-    st.metric("Total Data Verifikasi SPTJB", len(df_aktif))
-    st.markdown("---")
-
-    # Grafik Ringkasan per Prodi
-    st.markdown("### 📊 Grafik Ringkasan per Program Studi (Prodi)")
-    if len(df_aktif) > 0:
-        prodi_col = None
-        nominal_col = None
-        for col in df_aktif.columns:
-            col_l = col.lower()
-            if any(k in col_l for k in ["prodi", "departemen", "unit", "bagian", "program"]):
-                prodi_col = col
-            if any(k in col_l for k in ["nominal", "jumlah", "biaya", "pagu", "rp"]):
-                nominal_col = col
-                
-        if not prodi_col and len(df_aktif.columns) > 1:
-            prodi_col = df_aktif.columns[1]
-        if not nominal_col and len(df_aktif.columns) > 2:
-            nominal_col = df_aktif.columns[-2]
-
-        if prodi_col:
-            try:
-                df_chart = df_aktif.copy()
-                if nominal_col:
-                    df_chart[nominal_col] = df_chart[nominal_col].astype(str).str.replace(r'[^0-9.]', '', regex=True)
-                    df_chart[nominal_col] = pd.to_numeric(df_chart[nominal_col], errors='coerce').fillna(0)
-                    summary_df = df_chart.groupby(prodi_col).agg(
-                        Jumlah_Ajuan=(prodi_col, 'count'),
-                        Total_Nominal=(nominal_col, 'sum')
-                    ).reset_index()
-                else:
-                    summary_df = df_chart.groupby(prodi_col).size().reset_index(name='Jumlah_Ajuan')
-
-                col_g1, col_g2 = st.columns(2)
-                with col_g1:
-                    st.markdown("**Jumlah Ajuan per Prodi**")
-                    st.bar_chart(summary_df.set_index(prodi_col)['Jumlah_Ajuan'])
-                if nominal_col and 'Total_Nominal' in summary_df.columns:
-                    with col_g2:
-                        st.markdown("**Total Nominal (Rp) per Prodi**")
-                        st.bar_chart(summary_df.set_index(prodi_col)['Total_Nominal'])
-            except:
-                pass
-    st.markdown("---")
-
+    st.markdown(
+        f"""
+        <div class="sticky-wrapper">
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">✔️ Panel Khusus Verifikator SPTJB</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Total Data Verifikasi SPTJB: <b>{len(df_aktif)}</b></p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
     keyword_verif = st.text_input("Cari data verifikasi SPTJB:", placeholder="Ketik kata kunci...")
     df_verif = df_aktif.copy()
     if keyword_verif and len(df_verif.columns) > 0:
@@ -436,9 +419,15 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     )
 
 elif menu == "📋 Lihat & Cari Data":
-    st.subheader(f"🔍 Pencarian & Filter Data {kategori_nama}")
-    st.metric(f"Total Data {kategori_nama} Tercatat", len(df_aktif))
-    st.markdown("---")
+    st.markdown(
+        f"""
+        <div class="sticky-wrapper">
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">🔍 Pencarian & Filter Data {kategori_nama}</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Total Data {kategori_nama} Tercatat: <b>{len(df_aktif)}</b></p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     if kategori_nama == "SPTJB":
         keyword = st.text_input("Cari SPTJB (berdasarkan kata kunci):", placeholder="Ketik di sini...")
