@@ -253,7 +253,7 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Fungsi pembersih angka presisi mutlak
+# Fungsi pembersih angka untuk perhitungan total grand total
 def parse_realisasi_value(val):
     s = str(val).strip()
     if not s or s.lower() == 'nan' or s == '-':
@@ -266,13 +266,12 @@ def parse_realisasi_value(val):
     except:
         return 0.0
 
-# Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12 [Kolom M9], BZ=77, CA=78 secara mutlak)
+# Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12 [Kolom M9], BZ=77, CA=78)
 def load_data_verifikator():
     if not URL_VERIF:
         return pd.DataFrame()
     try:
         df_raw = pd.read_csv(URL_VERIF, header=None, dtype=str)
-        # Indeks Kolom Verifikator: D=3, F=5, M=12 (Realisasi M9), BZ=77, CA=78
         target_indices_verif = [3, 5, 12, 77, 78]
         valid_indices = [i for i in target_indices_verif if i < len(df_raw.columns)]
         
@@ -292,16 +291,7 @@ def load_data_verifikator():
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
-        # Format nilai pada kolom realisasi (Kolom M) agar seragam berawalan "Rp" dengan pemisah titik
-        for col in df.columns:
-            if any(k in col.lower() for k in ["nominal", "realisasi", "jumlah", "biaya"]):
-                def format_rp(val):
-                    num = parse_realisasi_value(val)
-                    if num == 0.0 and str(val).strip() in ["", "nan", "-"]:
-                        return "Rp 0"
-                    return f"Rp {num:,.0f}".replace(",", ".")
-                df[col] = df[col].apply(format_rp)
-
+        # Kolom Realisasi (Kolom M9) dibiarkan tampil bersih sesuai aslinya dari Google Sheet tanpa modifikasi teks paksa
         df = df.dropna(how='all').reset_index(drop=True)
         df.insert(0, "No.", range(1, len(df) + 1))
 
