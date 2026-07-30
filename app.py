@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Informasi Rencang FK UNPAD",
+    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -418,8 +418,8 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
     st.markdown(
         """
         <div class="sticky-wrapper">
-            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Grafik Jumlah Ajuan & Nominal per Program Studi</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Ringkasan data per Prodi / Departemen</p>
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi & Jumlah Ajuan Masing-Masing Prodi</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Rekap data per Program Studi (PSPD, PSKH, PPDS, dll.)</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -443,29 +443,54 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
         if prodi_col:
             try:
                 df_chart = df_aktif.copy()
+                
+                # Standarisasi pengelompokan prodi umum
+                def extract_prodi(val):
+                    v = str(val).strip().upper()
+                    if not v or v == 'NAN':
+                        return "Lainnya / Tidak Diketahui"
+                    if "PSPD" in v or "DOKTER" in v or "SARJANA KEDOKTERAN" in v:
+                        return "PSPD (Profesi Dokter & Sarjana Kedokteran)"
+                    elif "PSKH" in v or "KEBIDANAN" in v:
+                        return "PSKH (Kebidanan)"
+                    elif "PPDS" in v or "SPESIALIS" in v:
+                        return "PPDS (Spesialis)"
+                    elif "MAGISTER" in v or "S2" in v or "S3" in v or "DOKTOR" in v:
+                        return "Pascasarjana (S2/S3)"
+                    return str(val).strip()
+
+                df_chart["PRODI_KATEGORI"] = df_chart[prodi_col].apply(extract_prodi)
+
                 if nominal_col:
                     df_chart[nominal_col] = df_chart[nominal_col].astype(str).str.replace(r'[^0-9.]', '', regex=True)
                     df_chart[nominal_col] = pd.to_numeric(df_chart[nominal_col], errors='coerce').fillna(0)
-                    summary_df = df_chart.groupby(prodi_col).agg(
-                        Jumlah_Ajuan=(prodi_col, 'count'),
+                    summary_df = df_chart.groupby("PRODI_KATEGORI").agg(
+                        Jumlah_Ajuan=("PRODI_KATEGORI", 'count'),
                         Total_Nominal=(nominal_col, 'sum')
                     ).reset_index()
                 else:
-                    summary_df = df_chart.groupby(prodi_col).size().reset_index(name='Jumlah_Ajuan')
+                    summary_df = df_chart.groupby("PRODI_KATEGORI").size().reset_index(name='Jumlah_Ajuan')
 
+                summary_df = summary_df.sort_values(by="Jumlah_Ajuan", ascending=False).reset_index(drop=True)
+                summary_df.columns = ["Program Studi / Kategori", "Jumlah Ajuan", "Total Nominal (Rp)"] if nominal_col else ["Program Studi / Kategori", "Jumlah Ajuan"]
+
+                st.markdown("### 📋 Tabel Rekapitulasi per Program Studi")
+                st.dataframe(summary_df, use_container_width=True, hide_index=True)
+                
+                st.markdown("---")
                 col_g1, col_g2 = st.columns(2)
                 with col_g1:
-                    st.markdown("### **Jumlah Ajuan per Prodi**")
-                    st.bar_chart(summary_df.set_index(prodi_col)['Jumlah_Ajuan'])
+                    st.markdown("### **Grafik Jumlah Ajuan per Prodi**")
+                    st.bar_chart(summary_df.set_index("Program Studi / Kategori")['Jumlah_Ajuan'])
                 
-                if nominal_col and 'Total_Nominal' in summary_df.columns:
+                if nominal_col and 'Total Nominal (Rp)' in summary_df.columns:
                     with col_g2:
-                        st.markdown("### **Total Nominal (Rp) per Prodi**")
-                        st.bar_chart(summary_df.set_index(prodi_col)['Total_Nominal'])
+                        st.markdown("### **Grafik Total Nominal per Prodi**")
+                        st.bar_chart(summary_df.set_index("Program Studi / Kategori")['Total Nominal (Rp)'])
             except Exception as e:
-                st.info(f"⚠️ Gagal merender grafik: {e}")
+                st.info(f"⚠️ Gagal memproses rekapitulasi: {e}")
         else:
-            st.info("Kolom prodi/departemen tidak terdeteksi untuk pembuatan grafik.")
+            st.info("Kolom prodi atau unit kerja tidak terdeteksi untuk rekapitulasi.")
     else:
         st.warning("Data verifikator kosong atau belum terhubung.")
 
