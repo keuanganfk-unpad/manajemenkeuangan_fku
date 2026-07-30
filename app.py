@@ -5,20 +5,7 @@ import time
 import io
 import base64
 import re
-st.markdown(
-    """
-    <style>
-    /* Sembunyikan tombol Manage App */
-    button[kind="header"] {
-        display: none !important;
-    }
-    .manage-app-button {
-        display: none !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+
 # ==========================================
 # KONFIGURASI HALAMAN
 # ==========================================
@@ -27,6 +14,25 @@ st.set_page_config(
     page_icon="🏥",
     layout="wide",
 )
+
+# ==========================================
+# LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
+# ==========================================
+URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
+
+# Konversi otomatis link biasa menjadi link CSV otomatis
+def convert_sheets_url(url):
+    if "export?format=csv" in url:
+        return url
+    if "/edit" in url:
+        base_url = url.split("/edit")[0]
+        if "gid=" in url:
+            gid = url.split("gid=")[1].split("&")[0]
+            return f"{base_url}/export?format=csv&gid={gid}"
+        return f"{base_url}/export?format=csv"
+    return url
+
+URL_SPTJB = convert_sheets_url(URL_ASLI)
 
 # ==========================================
 # FUNGSI MEMBACA GAMBAR LOKAL (ANTI GAGAL)
@@ -82,11 +88,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Konstanta Nama File Excel
 EXCEL_DOSEN = "DATA DOSEN FK UNPAD_Pak Dede.xlsx"
 EXCEL_STAFF = "DATA TENDIK FK UNPAD_Pak Dede.xlsx"
 
-# Daftar Pilihan List Box untuk Prodi / Unit FK UNPAD
 LIST_PRODI_UNIT = [
     "Pilih Prodi / Unit...",
     "Program Studi Sarjana Kedokteran",
@@ -123,7 +127,6 @@ LIST_PRODI_UNIT = [
     "Dekanat / Pimpinan Fakultas"
 ]
 
-# Daftar Pilihan List Box untuk User
 LIST_USER = [
     "Pilih User / Pengaju...",
     "Asep Koswara",
@@ -136,9 +139,6 @@ LIST_USER = [
     "Yopi Taufik Limatranendra"
 ]
 
-# ==========================================
-# FUNGSI MEMUAT & MENYIMPAN DATA
-# ==========================================
 def load_data_dosen():
     if os.path.exists("Backup_Data_Dosen.csv"):
         try:
@@ -184,68 +184,18 @@ def load_data_staff():
         return pd.DataFrame(columns=["No.", "NIP", "NAMA", "JABATAN", "UNIT KERJA", "STATUS PEGAWAI", "JENIS KELAMIN", "HP", "Email"])
 
 def load_data_sptjb():
-    if os.path.exists("Backup_Data_SPTJB.csv"):
-        try:
-            df = pd.read_csv("Backup_Data_SPTJB.csv", dtype=str)
-            if len(df) > 0: return df.fillna("")
-        except:
-            pass
-
-    file_target = None
-    if os.path.exists("INPUT SPTJB.xlsx"):
-        file_target = "INPUT SPTJB.xlsx"
-    elif os.path.exists("SPTJB 2026 VER.1.xlsx"):
-        file_target = "SPTJB 2026 VER.1.xlsx"
-
-    df_empty = pd.DataFrame(columns=["Tanggal", "No. SPTJB / SPTJM", "Perihal / Kegiatan", "Prodi / Unit", "Akun / Output", "Nominal (Rp)", "User (Nama)", "No. Invoice", "Link Dokumen"])
-
-    if not file_target:
-        return df_empty
-
     try:
-        df_raw = pd.read_excel(file_target, sheet_name=0, header=None, dtype=str)
-        idx_header = 0
-        for i, row in df_raw.iterrows():
-            row_str = " ".join(row.fillna("").astype(str)).upper()
-            if "SPTJB" in row_str or "SPTJM" in row_str:
-                idx_header = i
-                break
-                
-        df_raw.columns = df_raw.iloc[idx_header].fillna("").astype(str).str.upper().str.strip()
-        df_data = df_raw.iloc[idx_header+1:].reset_index(drop=True)
+        # Membaca data Google Sheets dengan header berada di baris ke-9 (index 8)
+        df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
+        df.columns = df.columns.str.strip()
         
-        def get_col(keywords):
-            for col in df_data.columns:
-                for kw in keywords:
-                    if kw in col:
-                        return col
-            return None
-            
-        col_tgl = get_col(["TANGGAL"])
-        col_sptjb = get_col(["SPTJB", "SPTJM"])
-        col_perihal = get_col(["PERIHAL", "KEGIATAN"])
-        col_prodi = get_col(["PRODI", "UNIT"])
-        col_akun = get_col(["AKUN", "OUTPUT"])
-        col_nominal = get_col(["ANGGARAN", "NOMINAL", "REALISASI"])
-        col_user = get_col(["USER", "NAMA USER", "MENGAJUKAN"])
-        col_invoice = get_col(["INVOICE", "FAKTUR"])
-        col_link = get_col(["LINK", "DOKUMEN", "UPLOAD"])
+        # Memilih kolom spesifik berdasarkan indeks kolom Excel (C, E, G, J, K, S, T, CG, CI, CJ)
+        target_indices = [2, 4, 6, 9, 10, 18, 19, 84, 86, 87]
         
-        df_sptjb = pd.DataFrame()
-        df_sptjb["Tanggal"] = df_data[col_tgl] if col_tgl else ""
-        df_sptjb["No. SPTJB / SPTJM"] = df_data[col_sptjb] if col_sptjb else ""
-        df_sptjb["Perihal / Kegiatan"] = df_data[col_perihal] if col_perihal else ""
-        df_sptjb["Prodi / Unit"] = df_data[col_prodi] if col_prodi else ""
-        df_sptjb["Akun / Output"] = df_data[col_akun] if col_akun else ""
-        df_sptjb["Nominal (Rp)"] = df_data[col_nominal] if col_nominal else ""
-        df_sptjb["User (Nama)"] = df_data[col_user] if col_user else ""
-        df_sptjb["No. Invoice"] = df_data[col_invoice] if col_invoice else ""
-        df_sptjb["Link Dokumen"] = df_data[col_link] if col_link else ""
+        valid_indices = [i for i in target_indices if i < len(df.columns)]
+        if valid_indices:
+            df = df.iloc[:, valid_indices]
 
-        df_sptjb = df_sptjb.dropna(subset=["No. SPTJB / SPTJM"])
-        df_sptjb = df_sptjb[df_sptjb["No. SPTJB / SPTJM"].astype(str).str.strip() != ""]
-        df_sptjb = df_sptjb[df_sptjb["No. SPTJB / SPTJM"].astype(str).str.upper().str.strip() != "NO. SPTJB / SPTJM"]
-        
         def clean_date_format(val):
             val_str = str(val).strip()
             if not val_str or val_str.lower() == 'nan':
@@ -257,44 +207,21 @@ def load_data_sptjb():
                 return parsed_date.strftime('%Y-%m-%d')
             return val_str
 
-        df_sptjb["Tanggal"] = df_sptjb["Tanggal"].apply(clean_date_format)
+        for col in df.columns:
+            if "tanggal" in col.lower():
+                df[col] = df[col].apply(clean_date_format)
+            if "nominal" in col.lower():
+                df[col] = df[col].astype(str).str.replace(r'\.0$', '', regex=True).replace('nan', '')
 
-        if not df_sptjb["Nominal (Rp)"].empty:
-            df_sptjb["Nominal (Rp)"] = df_sptjb["Nominal (Rp)"].astype(str).str.replace(r'\.0$', '', regex=True).replace('nan', '')
-
-        df_sptjb = df_sptjb.fillna("").reset_index(drop=True)
-        
-        if len(df_sptjb) > 0:
-            df_sptjb.to_csv("Backup_Data_SPTJB.csv", index=False)
-            
-        return df_sptjb
-    except:
-        return df_empty
+        return df.fillna("")
+    except Exception as e:
+        st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
+        return pd.DataFrame()
 
 def simpan_backup():
     st.session_state.df_dosen.to_csv("Backup_Data_Dosen.csv", index=False)
     st.session_state.df_staff.to_csv("Backup_Data_Staff.csv", index=False)
-    st.session_state.df_sptjb.to_csv("Backup_Data_SPTJB.csv", index=False)
 
-# Fungsi untuk menghasilkan nomor SPTJB otomatis berikutnya
-def generate_next_sptjb_number(df):
-    if df is None or len(df) == 0:
-        return "1210/UN6.C/PK/KU/2026"
-    
-    # Ambil nilai nomor SPTJB terakhir dari baris terakhir dataframe
-    last_val = str(df["No. SPTJB / SPTJM"].iloc[-1]).strip()
-    
-    # Cari angka di bagian depan string menggunakan regex
-    match = re.match(r'^(\d+)(.*)$', last_val)
-    if match:
-        num_part = int(match.group(1))
-        suffix_part = match.group(2) # misal "/UN6.C/PK/KU/2026"
-        next_num = num_part + 1
-        return f"{next_num}{suffix_part}"
-    
-    return "1210/UN6.C/PK/KU/2026"
-
-# Inisialisasi Data
 if "df_dosen" not in st.session_state:
     st.session_state.df_dosen = load_data_dosen()
 if "df_staff" not in st.session_state:
@@ -302,9 +229,6 @@ if "df_staff" not in st.session_state:
 if "df_sptjb" not in st.session_state:
     st.session_state.df_sptjb = load_data_sptjb()
 
-# ==========================================
-# SIDEBAR & NAVIGASI
-# ==========================================
 kategori_data = st.sidebar.radio(
     "👥 Pilih Kategori Data:",
     ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "📄 Nomor SPTJB"]
@@ -326,8 +250,6 @@ elif kategori_data == "👨‍💼 Data Staff":
     df_aktif = st.session_state.df_staff
     kategori_nama = "Staff"
 else:
-    if len(st.session_state.df_sptjb) == 0:
-        st.session_state.df_sptjb = load_data_sptjb()
     df_aktif = st.session_state.df_sptjb
     kategori_nama = "SPTJB"
 
@@ -337,43 +259,36 @@ def clean_val(val):
     if val_str.endswith('.0'): val_str = val_str[:-2]
     return val_str
 
-# ==========================================
-# MENU 1: LIHAT & CARI DATA
-# ==========================================
 if menu == "📋 Lihat & Cari Data":
     st.subheader(f"🔍 Pencarian & Filter Data {kategori_nama}")
-    
-    if kategori_nama == "SPTJB" and len(df_aktif) == 0:
-        if not os.path.exists("INPUT SPTJB.xlsx") and not os.path.exists("SPTJB 2026 VER.1.xlsx"):
-            st.error("❌ GAGAL MEMUAT DATA: File Excel tidak ditemukan!")
-
     st.metric(f"Total Data {kategori_nama} Tercatat", len(df_aktif))
     st.markdown("---")
 
     if kategori_nama == "SPTJB":
-        keyword = st.text_input("Cari SPTJB (berdasarkan Nomor, Perihal, Nama, atau Prodi):", placeholder="Ketik di sini...")
+        keyword = st.text_input("Cari SPTJB (berdasarkan kata kunci):", placeholder="Ketik di sini...")
         filtered_df = df_aktif.copy()
-        if keyword:
-            filtered_df = filtered_df[
-                filtered_df["No. SPTJB / SPTJM"].astype(str).str.contains(keyword, case=False, na=False) |
-                filtered_df["Perihal / Kegiatan"].astype(str).str.contains(keyword, case=False, na=False) |
-                filtered_df["Prodi / Unit"].astype(str).str.contains(keyword, case=False, na=False) |
-                filtered_df["User (Nama)"].astype(str).str.contains(keyword, case=False, na=False)
-            ]
+        if keyword and len(filtered_df.columns) > 0:
+            mask = filtered_df.apply(lambda row: row.astype(str).str.contains(keyword, case=False, na=False).any(), axis=1)
+            filtered_df = filtered_df[mask]
         
         st.markdown(f"**Menampilkan {len(filtered_df)} data:**")
+        
+        # Deteksi kolom link dokumen (biasanya kolom paling ujung atau yang mengandung kata link/dokumen/url)
+        column_config_dict = {}
+        for col in filtered_df.columns:
+            if any(k in col.lower() for k in ["link", "dokumen", "url", "file"]):
+                column_config_dict[col] = st.column_config.LinkColumn(
+                    col,
+                    help="Klik untuk membuka tautan dokumen",
+                    display_text="🔗 Buka Dokumen"
+                )
+
         st.dataframe(
             filtered_df,
             use_container_width=True,
             height=500,
             hide_index=True,
-            column_config={
-                "Link Dokumen": st.column_config.LinkColumn(
-                    "Link Dokumen",
-                    help="Klik untuk membuka tautan dokumen",
-                    display_text="🔗 Buka Dokumen"
-                )
-            }
+            column_config=column_config_dict
         )
     else:
         keyword = st.text_input(f"Cari {kategori_nama} (berdasarkan Nama atau NIP):", placeholder="Ketik di sini...")
@@ -387,15 +302,9 @@ if menu == "📋 Lihat & Cari Data":
         st.markdown(f"**Menampilkan {len(filtered_df)} data:**")
         st.dataframe(filtered_df, use_container_width=True, height=500, hide_index=True)
 
-# ==========================================
-# MENU 2: TAMBAH DATA
-# ==========================================
 elif menu == "➕ Tambah Data Baru":
     st.subheader(f"➕ Form Penambahan Data {kategori_nama}")
     
-    # Hitung nomor otomatis jika kategori SPTJB
-    auto_sptjb_num = generate_next_sptjb_number(st.session_state.df_sptjb) if kategori_nama == "SPTJB" else ""
-
     with st.form("form_tambah"):
         col1, col2 = st.columns(2)
         if kategori_nama == "Dosen":
@@ -417,7 +326,7 @@ elif menu == "➕ Tambah Data Baru":
             with col1:
                 nip = st.text_input("NIP / NIK / ID Staff")
                 nama = st.text_input("Nama Lengkap*")
-                jabatan = st.text_input("Jabatan (Contoh: Admin, Teknisi, dll)")
+                jabatan = st.text_input("Jabatan")
                 unit_kerja = st.text_input("Unit Kerja / Bagian")
             with col2:
                 status_pegawai = st.selectbox("Status Pegawai", ["PNS", "Non PNS", "Honorer", "Lainnya"])
@@ -425,61 +334,38 @@ elif menu == "➕ Tambah Data Baru":
                 hp = st.text_input("Nomor HP")
                 email = st.text_input("Email")
         elif kategori_nama == "SPTJB":
-            with col1:
-                tanggal = st.date_input("Tanggal")
-                # Nomor SPTJB otomatis (disabled agar tidak bisa diubah sembarangan, tapi tetap tampil jelas)
-                no_sptjb = st.text_input("No. SPTJB / SPTJM (Otomatis)", value=auto_sptjb_num, disabled=True)
-                perihal = st.text_area("Perihal / Kegiatan")
-                prodi = st.selectbox("Prodi / Unit", LIST_PRODI_UNIT)
-            with col2:
-                akun = st.text_input("Akun / Output")
-                nominal = st.text_input("Nominal (Rp)")
-                nama_user = st.selectbox("User (Nama Yang Mengajukan)", LIST_USER)
-                invoice = st.text_input("No. Invoice")
-                link_dokumen = st.text_input("Link Dokumen (URL / Link web)")
+            st.info("Form penambahan langsung ke Google Sheets dapat dilakukan melalui halaman Google Sheets Anda.")
                 
-        submit_button = st.form_submit_button(f"💾 Simpan Data {kategori_nama}", use_container_width=True)
-        if submit_button:
-            if kategori_nama in ["Dosen", "Staff"] and not nama:
-                st.warning("⚠️ Nama Lengkap wajib diisi!")
-            elif kategori_nama == "SPTJB" and prodi == LIST_PRODI_UNIT[0]:
-                st.warning("⚠️ Silakan pilih Prodi / Unit terlebih dahulu!")
-            elif kategori_nama == "SPTJB" and nama_user == LIST_USER[0]:
-                st.warning("⚠️ Silakan pilih User / Nama Pengaju terlebih dahulu!")
-            else:
-                if kategori_nama == "Dosen":
-                    new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NIK": str(nik), "NAMA": nama, "DEPARTEMEN": departemen, "INSTANSI INDUK": instansi, "STATUS AKTIF/TIDAK AKTIF": status_aktif, "JENIS KELAMIN": jenis_kelamin, "Tempat Lahir": tmp_lahir, "Tanggal Lahir": tgl_lahir, "USIA": "-", "Alamat Rumah": alamat, "Email": email, "HP": str(hp)}
-                    st.session_state.df_dosen = pd.concat([st.session_state.df_dosen, pd.DataFrame([new_data])], ignore_index=True)
-                elif kategori_nama == "Staff":
-                    new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NAMA": nama, "JABATAN": jabatan, "UNIT KERJA": unit_kerja, "STATUS PEGAWAI": status_pegawai, "JENIS KELAMIN": jenis_kelamin, "HP": str(hp), "Email": email}
-                    st.session_state.df_staff = pd.concat([st.session_state.df_staff, pd.DataFrame([new_data])], ignore_index=True)
-                elif kategori_nama == "SPTJB":
-                    new_data = {"Tanggal": str(tanggal), "No. SPTJB / SPTJM": auto_sptjb_num, "Perihal / Kegiatan": perihal, "Prodi / Unit": prodi, "Akun / Output": akun, "Nominal (Rp)": nominal, "User (Nama)": nama_user, "No. Invoice": invoice, "Link Dokumen": link_dokumen}
-                    st.session_state.df_sptjb = pd.concat([st.session_state.df_sptjb, pd.DataFrame([new_data])], ignore_index=True)
-                simpan_backup()
-                msg = auto_sptjb_num if kategori_nama == "SPTJB" else nama
-                st.success(f"🎉 Data {kategori_nama} dengan nomor **{msg}** berhasil ditambahkan dan tersimpan!")
-                time.sleep(1.5)
-                st.rerun()
-                
-# ==========================================
-# MENU 3: EDIT DATA
-# ==========================================
+        if kategori_nama != "SPTJB":
+            submit_button = st.form_submit_button(f"💾 Simpan Data {kategori_nama}", use_container_width=True)
+            if submit_button:
+                if not nama:
+                    st.warning("⚠️ Nama Lengkap wajib diisi!")
+                else:
+                    if kategori_nama == "Dosen":
+                        new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NIK": str(nik), "NAMA": nama, "DEPARTEMEN": departemen, "INSTANSI INDUK": instansi, "STATUS AKTIF/TIDAK AKTIF": status_aktif, "JENIS KELAMIN": jenis_kelamin, "Tempat Lahir": tmp_lahir, "Tanggal Lahir": tgl_lahir, "USIA": "-", "Alamat Rumah": alamat, "Email": email, "HP": str(hp)}
+                        st.session_state.df_dosen = pd.concat([st.session_state.df_dosen, pd.DataFrame([new_data])], ignore_index=True)
+                        simpan_backup()
+                    elif kategori_nama == "Staff":
+                        new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NAMA": nama, "JABATAN": jabatan, "UNIT KERJA": unit_kerja, "STATUS PEGAWAI": status_pegawai, "JENIS KELAMIN": jenis_kelamin, "HP": str(hp), "Email": email}
+                        st.session_state.df_staff = pd.concat([st.session_state.df_staff, pd.DataFrame([new_data])], ignore_index=True)
+                        simpan_backup()
+                    
+                    st.success(f"🎉 Data {kategori_nama} **{nama}** berhasil ditambahkan!")
+                    time.sleep(1.5)
+                    st.rerun()
+
 elif menu == "✏️ Edit Data":
     st.subheader(f"✏️ Edit Data {kategori_nama}")
     if len(df_aktif) == 0:
         st.info(f"Belum ada data {kategori_nama} untuk diedit.")
+    elif kategori_nama == "SPTJB":
+        st.info("Penyuntingan data SPTJB disarankan langsung melalui file Google Sheets Anda.")
     else:
-        if kategori_nama == "SPTJB":
-            pilihan = df_aktif["No. SPTJB / SPTJM"].dropna().tolist()
-            to_edit = st.selectbox("Pilih Nomor SPTJB yang ingin diedit:", pilihan)
-            old_data = df_aktif[df_aktif["No. SPTJB / SPTJM"] == to_edit].iloc[0]
-            idx = df_aktif[df_aktif["No. SPTJB / SPTJM"] == to_edit].index[0]
-        else:
-            pilihan = df_aktif["NAMA"].dropna().tolist()
-            to_edit = st.selectbox(f"Pilih Nama {kategori_nama} yang ingin diedit:", pilihan)
-            old_data = df_aktif[df_aktif["NAMA"] == to_edit].iloc[0]
-            idx = df_aktif[df_aktif["NAMA"] == to_edit].index[0]
+        pilihan = df_aktif["NAMA"].dropna().tolist()
+        to_edit = st.selectbox(f"Pilih Nama {kategori_nama} yang ingin diedit:", pilihan)
+        old_data = df_aktif[df_aktif["NAMA"] == to_edit].iloc[0]
+        idx = df_aktif[df_aktif["NAMA"] == to_edit].index[0]
         
         with st.form("form_edit"):
             col1, col2 = st.columns(2)
@@ -508,80 +394,48 @@ elif menu == "✏️ Edit Data":
                     jenis_kelamin = st.selectbox("Jenis Kelamin", jk_opts, index=idx_jk)
                     hp = st.text_input("Nomor HP", value=clean_val(old_data.get("HP")))
                     email = st.text_input("Email", value=clean_val(old_data.get("Email")))
-            elif kategori_nama == "SPTJB":
-                with col1:
-                    tanggal = st.text_input("Tanggal (YYYY-MM-DD)", value=clean_val(old_data.get("Tanggal")))
-                    no_sptjb_edit = st.text_input("No. SPTJB / SPTJM", value=clean_val(old_data.get("No. SPTJB / SPTJM")))
-                    perihal = st.text_area("Perihal / Kegiatan", value=clean_val(old_data.get("Perihal / Kegiatan")))
-                    
-                    curr_prodi = clean_val(old_data.get("Prodi / Unit"))
-                    idx_prodi = LIST_PRODI_UNIT.index(curr_prodi) if curr_prodi in LIST_PRODI_UNIT else 0
-                    prodi = st.selectbox("Prodi / Unit", LIST_PRODI_UNIT, index=idx_prodi)
-                with col2:
-                    akun = st.text_input("Akun / Output", value=clean_val(old_data.get("Akun / Output")))
-                    nominal = st.text_input("Nominal (Rp)", value=clean_val(old_data.get("Nominal (Rp)")))
-                    
-                    curr_user = clean_val(old_data.get("User (Nama)"))
-                    idx_user = LIST_USER.index(curr_user) if curr_user in LIST_USER else 0
-                    nama_user = st.selectbox("User (Nama Yang Mengajukan)", LIST_USER, index=idx_user)
-                    
-                    invoice = st.text_input("No. Invoice", value=clean_val(old_data.get("No. Invoice")))
-                    link_dokumen = st.text_input("Link Dokumen", value=clean_val(old_data.get("Link Dokumen")))
 
             submit_edit = st.form_submit_button("🔄 Perbarui Data", use_container_width=True)
             if submit_edit:
-                if kategori_nama in ["Dosen", "Staff"] and not nama:
+                if not nama:
                     st.warning("⚠️ Nama Lengkap wajib diisi!")
                 else:
                     if kategori_nama == "Dosen":
                         st.session_state.df_dosen.at[idx, "NIP"], st.session_state.df_dosen.at[idx, "NAMA"] = str(nip), nama
                         st.session_state.df_dosen.at[idx, "DEPARTEMEN"], st.session_state.df_dosen.at[idx, "Email"], st.session_state.df_dosen.at[idx, "HP"] = departemen, email, str(hp)
+                        simpan_backup()
                     elif kategori_nama == "Staff":
                         st.session_state.df_staff.at[idx, "NIP"], st.session_state.df_staff.at[idx, "NAMA"] = str(nip), nama
                         st.session_state.df_staff.at[idx, "JABATAN"], st.session_state.df_staff.at[idx, "UNIT KERJA"] = jabatan, unit_kerja
                         st.session_state.df_staff.at[idx, "STATUS PEGAWAI"], st.session_state.df_staff.at[idx, "JENIS KELAMIN"], st.session_state.df_staff.at[idx, "HP"], st.session_state.df_staff.at[idx, "Email"] = status_pegawai, jenis_kelamin, str(hp), email
-                    elif kategori_nama == "SPTJB":
-                        st.session_state.df_sptjb.at[idx, "Tanggal"] = str(tanggal)
-                        st.session_state.df_sptjb.at[idx, "No. SPTJB / SPTJM"], st.session_state.df_sptjb.at[idx, "Perihal / Kegiatan"] = no_sptjb_edit, perihal
-                        st.session_state.df_sptjb.at[idx, "Prodi / Unit"], st.session_state.df_sptjb.at[idx, "Akun / Output"] = prodi, akun
-                        st.session_state.df_sptjb.at[idx, "Nominal (Rp)"] = nominal
-                        st.session_state.df_sptjb.at[idx, "User (Nama)"], st.session_state.df_sptjb.at[idx, "No. Invoice"], st.session_state.df_sptjb.at[idx, "Link Dokumen"] = nama_user, invoice, link_dokumen
-                    simpan_backup()
-                    msg = no_sptjb_edit if kategori_nama == "SPTJB" else nama
-                    st.success(f"✅ Data {kategori_nama} **{msg}** berhasil diperbarui!")
+                        simpan_backup()
+                    
+                    st.success(f"✅ Data {kategori_nama} **{nama}** berhasil diperbarui!")
                     time.sleep(1.5)
                     st.rerun()
 
-# ==========================================
-# MENU 4: HAPUS DATA
-# ==========================================
 elif menu == "🗑️ Hapus Data":
     st.subheader(f"🗑️ Penghapusan Data {kategori_nama}")
     if len(df_aktif) == 0:
         st.info(f"Tidak ada data {kategori_nama} untuk dihapus.")
+    elif kategori_nama == "SPTJB":
+        st.info("Penghapusan data SPTJB disarankan langsung melalui file Google Sheets Anda.")
     else:
-        if kategori_nama == "SPTJB":
-            pilihan = df_aktif["No. SPTJB / SPTJM"].dropna().tolist()
-            to_delete = st.selectbox("Pilih Nomor SPTJB yang ingin dihapus:", pilihan)
-        else:
-            pilihan = df_aktif["NAMA"].dropna().tolist()
-            to_delete = st.selectbox(f"Pilih Nama {kategori_nama} yang akan dihapus:", pilihan)
+        pilihan = df_aktif["NAMA"].dropna().tolist()
+        to_delete = st.selectbox(f"Pilih Nama {kategori_nama} yang ingin dihapus:", pilihan)
 
         if st.button("🗑️ Hapus Data", type="primary"):
             if kategori_nama == "Dosen":
                 st.session_state.df_dosen = st.session_state.df_dosen[st.session_state.df_dosen["NAMA"] != to_delete].reset_index(drop=True)
+                simpan_backup()
             elif kategori_nama == "Staff":
                 st.session_state.df_staff = st.session_state.df_staff[st.session_state.df_staff["NAMA"] != to_delete].reset_index(drop=True)
-            elif kategori_nama == "SPTJB":
-                st.session_state.df_sptjb = st.session_state.df_sptjb[st.session_state.df_sptjb["No. SPTJB / SPTJM"] != to_delete].reset_index(drop=True)
-            simpan_backup()
+                simpan_backup()
+            
             st.success(f"✅ Data {kategori_nama} **{to_delete}** berhasil dihapus!")
             time.sleep(1.5)
             st.rerun()
 
-# ==========================================
-# MENU 5: UNDUH / SIMPAN KE EXCEL
-# ==========================================
 elif menu == "📥 Unduh / Simpan ke Excel":
     st.subheader(f"📥 Unduh Excel: Data {kategori_nama}")
     if len(df_aktif) == 0:
