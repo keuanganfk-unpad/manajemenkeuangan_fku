@@ -1,3 +1,17 @@
+st.markdown(
+    """
+    <style>
+    /* Sembunyikan tombol Manage App */
+    button[kind="header"] {
+        display: none !important;
+    }
+    .manage-app-button {
+        display: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 import pandas as pd
 import streamlit as st
 import os
