@@ -1,4 +1,4 @@
-import pandas as pd
+ import pandas as pd
 import streamlit as st
 import os
 import time
@@ -258,11 +258,8 @@ def parse_realisasi_value(val):
     s = str(val).strip()
     if not s or s.lower() == 'nan':
         return 0.0
-    # Hapus awalan 'Rp', spasi, dan karakter non-numerik kecuali koma dan titik
     s_clean = s.replace('Rp', '').replace('rp', '').strip()
-    # Jika format menggunakan koma sebagai pemisah ribuan (misal 48,646,003,185)
     s_clean = s_clean.replace(',', '')
-    # Bersihkan sisa karakter non-digit atau titik desimal
     s_clean = re.sub(r'[^0-9.]', '', s_clean)
     try:
         return float(s_clean)
@@ -294,7 +291,6 @@ def load_data_verifikator():
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
-        # Format nilai kolom realisasi/nominal agar berawalan "Rp" dengan pemisah titik
         for col in df.columns:
             if any(k in col.lower() for k in ["nominal", "realisasi", "jumlah", "biaya"]):
                 def format_rp(val):
@@ -475,7 +471,7 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         column_config=column_config_dict
     )
 
-    # --- FITUR TOTAL KESELURUHAN REALISASI DI BAWAH TABEL (DIREVISI AKURAT) ---
+    # --- FITUR TOTAL KESELURUHAN REALISASI DI BAWAH TABEL ---
     try:
         target_realisasi_col = None
         for col in edited_df_verif.columns:
@@ -506,7 +502,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
         """
         <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Akumulasi Realisasi Berdasarkan Nama User</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Penjumlahan total realisasi otomatis per user secara presisi (milyaran / jutaan)</p>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Penjumlahan total realisasi otomatis per user dengan format Rupiah</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -531,6 +527,28 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             summary_df = summary_df.sort_values(by="Total_Realisasi_Num", ascending=False).reset_index(drop=True)
             
+            # Hitung Jumlah N Prodi/User serta Grand Total Realisasi
+            jumlah_n_prodi = len(summary_df)
+            grand_total_rekap = summary_df["Total_Realisasi_Num"].sum()
+            formatted_grand_total = f"Rp {grand_total_rekap:,.0f}".replace(",", ".")
+
+            # Tampilkan informasi Jumlah N Prodi dan Grand Total di atas tabel rekap
+            st.markdown(
+                f"""
+                <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                    <div style="flex: 1; background-color: #eff6ff; padding: 12px 20px; border-radius: 8px; border: 1px solid #bfdbfe;">
+                        <span style="font-size: 0.95rem; color: #1e40af; font-weight: 600;">Jumlah Prodi / User (N):</span><br>
+                        <span style="font-size: 1.4rem; color: #1d4ed8; font-weight: 700;">{jumlah_n_prodi} Prodi / User</span>
+                    </div>
+                    <div style="flex: 1; background-color: #f0fdf4; padding: 12px 20px; border-radius: 8px; border: 1px solid #bbf7d0;">
+                        <span style="font-size: 0.95rem; color: #166534; font-weight: 600;">Grand Total Realisasi:</span><br>
+                        <span style="font-size: 1.4rem; color: #15803d; font-weight: 700;">{formatted_grand_total}</span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
             summary_table_display = summary_df.copy()
             summary_table_display["Total_Realisasi_Num"] = summary_table_display["Total_Realisasi_Num"].apply(lambda x: f"Rp {x:,.0f}".replace(",", "."))
             summary_table_display.columns = ["Nama User", "Jumlah Ajuan", "Total Realisasi (Rp)"]
