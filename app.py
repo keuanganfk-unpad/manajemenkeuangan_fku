@@ -302,14 +302,12 @@ def load_data_rekap_user():
     if not URL_SPTJB:
         return pd.DataFrame()
     try:
-        # Baca tanpa header dulu untuk memindai posisi baris header dan nama kolom
         df_raw = pd.read_csv(URL_SPTJB, header=None, dtype=str)
         
         user_col_idx = -1
         realisasi_col_idx = -1
         header_row_idx = -1
 
-        # Cari baris yang mengandung "NAMA USER" dan "REALISASI"
         for r_idx in range(min(15, len(df_raw))):
             row_vals = [str(val).strip().upper() for val in df_raw.iloc[r_idx].values]
             for c_idx, val in enumerate(row_vals):
@@ -323,7 +321,6 @@ def load_data_rekap_user():
             if user_col_idx != -1 and realisasi_col_idx != -1:
                 break
 
-        # Jika tidak ketemu secara spesifik, fallback ke indeks kolom S (18) dan T (19)
         if user_col_idx == -1: user_col_idx = 18
         if realisasi_col_idx == -1: realisasi_col_idx = 19
         if header_row_idx == -1: header_row_idx = 8
@@ -456,8 +453,8 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
     st.markdown(
         """
         <div class="sticky-wrapper">
-            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Berdasarkan Kolom NAMA USER & REALISASI</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Pembersihan koma ribuan dan penjumlahan akumulatif otomatis</p>
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Akumulasi Realisasi Berdasarkan Nama User</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Penjumlahan total realisasi otomatis per user (tanpa pengali ribuan)</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -474,12 +471,14 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             df_rekap_raw["USER_CLEAN"] = df_rekap_raw["NAMA_USER"].apply(clean_user_name)
             
-            # Logika Pembersihan: Menghapus koma pemisah ribuan (misal "1,295,000" -> 1295000)
+            # Logika Pembersihan: Menghapus koma pemisah ribuan secara presisi tanpa dikalikan 1000
             def parse_realisasi(val):
                 s = str(val).strip()
                 if not s or s.lower() == 'nan':
                     return 0.0
-                s_clean = re.sub(r'[^0-9.-]', '', s.replace(',', ''))
+                # Menghapus koma pemisah ribuan (contoh: "1,295,000" menjadi "1295000")
+                s_clean = s.replace(',', '')
+                s_clean = re.sub(r'[^0-9.-]', '', s_clean)
                 try:
                     return float(s_clean)
                 except:
@@ -487,7 +486,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             df_rekap_raw["REALISASI_NUM"] = df_rekap_raw["REALISASI"].apply(parse_realisasi)
 
-            # Logika Akumulasi: Groupby User, Hitung Jumlah Ajuan, dan Jumlahkan Total Realisasi
+            # Logika Penjumlahan (Akumulasi Total): Groupby User, Hitung Jumlah Ajuan, dan Jumlahkan Total Realisasi
             summary_df = df_rekap_raw.groupby("USER_CLEAN").agg(
                 Jumlah_Ajuan=("USER_CLEAN", 'count'),
                 Total_Realisasi_Num=("REALISASI_NUM", 'sum')
