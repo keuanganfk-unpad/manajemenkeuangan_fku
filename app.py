@@ -404,36 +404,38 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
                 default=False
             )
 
-    st.markdown("**Daftar Tabel Verifikasi SPTJB (Klik pada baris tabel untuk melihat rincian):**")
-    
-    # Tabel interaktif dengan pemilihan baris yang stabil
-    event = st.dataframe(
+    st.markdown("**Daftar Tabel Verifikasi SPTJB:**")
+    st.dataframe(
         df_verif,
         use_container_width=True,
         height=400,
         hide_index=True,
-        column_config=column_config_dict,
-        on_select="rerun",
-        selection_mode="single-row"
+        column_config=column_config_dict
     )
 
-    # --- MENAMPILKAN DETAIL BARIS KETIKA DI-KLIK ---
-    try:
-        selected_rows = event.selection.rows
-        if selected_rows:
-            row_idx = selected_rows[0]
-            row_data = df_verif.iloc[row_idx]
+    # --- FITUR PILIH BARIS INTERAKTIF UNTUK MELIHAT DETAIL ---
+    if len(df_verif) > 0:
+        st.markdown("---")
+        st.markdown("### 🔍 **Pilih Nomor Baris untuk Melihat Rincian Detail**")
+        
+        # Membuat pilihan dropdown berdasarkan nomor urut (No.) dan isi baris
+        row_options = [f"Baris ke-{row['No.']} (Data ID: {row.iloc[1] if len(row) > 1 else 'N/A'})" for _, row in df_verif.iterrows()]
+        selected_row_label = st.selectbox("Pilih baris data:", row_options)
+        
+        if selected_row_label:
+            # Ambil indeks nomor baris yang dipilih
+            selected_idx = row_options.index(selected_row_label)
+            selected_data = df_verif.iloc[selected_idx]
             
-            st.markdown("---")
-            st.info(f"📌 **Detail Informasi Baris #{row_idx + 1} yang Dipilih:**")
+            st.markdown(f"**📌 Rincian Lengkap untuk Baris #{selected_data['No.']}:**")
             
-            # Membuat tampilan rincian dalam grid kolom yang bersih
-            detail_cols = st.columns(2)
-            for i, (col_name, val) in enumerate(row_data.items()):
-                with detail_cols[i % 2]:
-                    st.text_input(label=str(col_name), value=str(val), disabled=True, key=f"detail_{row_idx}_{i}")
-    except Exception as e:
-        pass
+            # Tampilkan rincian dalam kotak tabel vertikal rapi
+            detail_list = []
+            for col_name, val in selected_data.items():
+                detail_list.append({"Atribut Kolom": col_name, "Isi / Nilai Data": val})
+            
+            detail_df = pd.DataFrame(detail_list)
+            st.dataframe(detail_df, use_container_width=True, hide_index=True)
 
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
