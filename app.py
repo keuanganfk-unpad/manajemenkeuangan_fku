@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Informasi Rencang FK Unpad",
+    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -107,15 +107,15 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (STICKY HEADER & TITLE)
+# CSS KHUSUS (STICKY HEADER & SUBHEADER)
 # ==========================================
 st.markdown(
     f"""
     <style>
-    /* Membuat header utama dan area sticky teratas tidak ikut tergulung */
+    /* Header Utama */
     div[data-testid="stVerticalBlock"] > div:first-of-type {{
         position: sticky;
-        top: 2.875rem; 
+        top: 0rem; 
         z-index: 999;
         background-color: var(--background-color);
         padding-top: 10px;
@@ -147,13 +147,14 @@ st.markdown(
         font-weight: 500;
     }}
     .block-container {{
-        padding-top: 2rem !important;
+        padding-top: 1rem !important;
     }}
-    /* Membuat bagian judul halaman & metrik ikut sticky di bawah header utama */
-    .sticky-subheader-container {{
+    
+    /* Kontainer Sticky untuk Subheader / Judul Halaman & Metrik */
+    .sticky-wrapper {{
         position: sticky;
-        top: 8.5rem;
-        z-index: 988;
+        top: 5.5rem;
+        z-index: 998;
         background-color: var(--background-color);
         padding-top: 10px;
         padding-bottom: 10px;
@@ -366,18 +367,16 @@ def clean_val(val):
 # KONTEN UTAMA APLIKASI
 # ==========================================
 if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
-    # Membungkus judul dan metrik dalam kontainer sticky agar tidak ikut ter-scroll ke atas
     st.markdown(
-        """
-        <div class="sticky-subheader-container">
+        f"""
+        <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">✔️ Panel Khusus Verifikator SPTJB</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Total Data Verifikasi SPTJB: <b>{len(df_aktif)}</b></p>
         </div>
         """,
         unsafe_allow_html=True
     )
-    st.metric("Total Data Verifikasi SPTJB", len(df_aktif))
-    st.markdown("---")
-
+    
     # Grafik Ringkasan per Prodi
     st.markdown("### 📊 Grafik Ringkasan per Program Studi (Prodi)")
     if len(df_aktif) > 0:
@@ -453,14 +452,13 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
         f"""
-        <div class="sticky-subheader-container">
+        <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">🔍 Pencarian & Filter Data {kategori_nama}</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Total Data {kategori_nama} Tercatat: <b>{len(df_aktif)}</b></p>
         </div>
         """,
         unsafe_allow_html=True
     )
-    st.metric(f"Total Data {kategori_nama} Tercatat", len(df_aktif))
-    st.markdown("---")
 
     if kategori_nama == "SPTJB":
         keyword = st.text_input("Cari SPTJB (berdasarkan kata kunci):", placeholder="Ketik di sini...")
