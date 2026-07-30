@@ -49,7 +49,7 @@ if not st.session_state.logged_in:
         st.markdown(
             """
             <div style="text-align: center; padding: 20px; border: 1px solid #d1d5db; border-radius: 10px; background-color: #f9fafb;">
-                <h2>🔐 Login Sistem FK UNPAD</h2>
+                <h2>🔐 Login Sistem Rencang FK UNPAD</h2>
                 <p style="color: gray;">Silakan masukkan User ID dan Password Anda</p>
             </div>
             """, 
