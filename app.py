@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Informasi RENCANG Fakultas Kedokteran Unpad",
+    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -78,7 +78,7 @@ if not st.session_state.logged_in:
 # ==========================================
 # LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
 # ==========================================
-URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
+URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 
 def convert_sheets_url(url):
     if "export?format=csv" in url:
@@ -128,6 +128,10 @@ st.markdown(
         padding-bottom: 15px;
         margin-bottom: 15px;
     }}
+    .header-text {{
+        display: flex;
+        flex-direction: column;
+    }}
     .header-title {{
         font-size: 2.1rem;
         color: #2c3e50; 
@@ -135,13 +139,22 @@ st.markdown(
         margin: 0;
         line-height: 1.2;
     }}
+    .header-subtitle {{
+        font-size: 1.1rem;
+        color: #6b7280;
+        margin-top: 5px;
+        font-weight: 500;
+    }}
     .block-container {{
         padding-top: 2rem !important;
     }}
     </style>
     <div class="header-container">
         <img src="{LOGO_SRC}" width="70" style="object-fit: contain;">
-        <div class="header-title">Sistem Informasi RENCANG </div>
+        <div class="header-text">
+            <div class="header-title">Sistem Informasi RENCANG</div>
+            <div class="header-subtitle">Perencanaan dan Keuangan FK Unpad</div>
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
