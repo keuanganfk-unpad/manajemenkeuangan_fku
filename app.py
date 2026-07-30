@@ -16,6 +16,63 @@ st.set_page_config(
 )
 
 # ==========================================
+# DATABASE USER ID & PASSWORD
+# ==========================================
+DATABASE_USER = {
+    "adminfk": {"password": "admin2026", "nama": "Administrator FK Unpad"},
+    "asep": {"password": "asep123", "nama": "Asep Koswara"},
+    "cheppy": {"password": "cheppy123", "nama": "Cheppy Agustiana"},
+    "dede": {"password": "dede123", "nama": "Dede Nurdin"},
+    "deviyanti": {"password": "devi123", "nama": "Deviyanti"},
+    "erwin": {"password": "erwin123", "nama": "Erwin Muftiwijaya"},
+    "neneng": {"password": "neneng123", "nama": "Neneng Ratnasari Rosa"},
+    "nita": {"password": "nita123", "nama": "Nita Widyastuti"},
+    "yopi": {"password": "yopi123", "nama": "Yopi Taufik Limatranendra"}
+}
+
+# Inisialisasi status login di session_state
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "current_user" not in st.session_state:
+    st.session_state.current_user = ""
+
+# ==========================================
+# HALAMAN LOGIN (USER ID & PASSWORD)
+# ==========================================
+if not st.session_state.logged_in:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col_l1, col_l2, col_l3 = st.columns([1, 1.2, 1])
+    
+    with col_l2:
+        st.markdown(
+            """
+            <div style="text-align: center; padding: 20px; border: 1px solid #d1d5db; border-radius: 10px; background-color: #f9fafb;">
+                <h2>🔐 Login Sistem FK UNPAD</h2>
+                <p style="color: gray;">Silakan masukkan User ID dan Password Anda</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+        with st.form("form_login"):
+            input_user_id = st.text_input("User ID", placeholder="Ketik User ID...").strip().lower()
+            input_password = st.text_input("Password", type="password", placeholder="Ketik Password...")
+            submit_login = st.form_submit_button("🚀 Masuk Aplikasi", use_container_width=True)
+            
+            if submit_login:
+                if input_user_id in DATABASE_USER and DATABASE_USER[input_user_id]["password"] == input_password:
+                    st.session_state.logged_in = True
+                    st.session_state.current_user = DATABASE_USER[input_user_id]["nama"]
+                    st.success(f"Login berhasil! Selamat datang, {DATABASE_USER[input_user_id]['nama']}")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error("❌ User ID atau Password salah! Periksa kembali data Anda.")
+    
+    # Hentikan eksekusi kode di bawah jika belum login
+    st.stop()
+
+# ==========================================
 # LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
 # ==========================================
 URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
@@ -137,13 +194,10 @@ def load_data_staff():
 
 def load_data_sptjb():
     try:
-        # Membaca data Google Sheets dengan header berada di baris ke-9 (index 8)
         df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
         df.columns = df.columns.str.strip()
         
-        # Memilih kolom spesifik berdasarkan indeks kolom Excel (C, E, G, J, K, S, T, CG, CI, CJ)
         target_indices = [2, 4, 6, 9, 10, 18, 19, 84, 86, 87]
-        
         valid_indices = [i for i in target_indices if i < len(df.columns)]
         if valid_indices:
             df = df.iloc[:, valid_indices]
@@ -181,6 +235,17 @@ if "df_staff" not in st.session_state:
 if "df_sptjb" not in st.session_state:
     st.session_state.df_sptjb = load_data_sptjb()
 
+# ==========================================
+# SIDEBAR & NAVIGASI (SETELAH LOGIN)
+# ==========================================
+st.sidebar.success(f"👤 Login as: **{st.session_state.current_user}**")
+if st.sidebar.button("🚪 Logout", use_container_width=True):
+    st.session_state.logged_in = False
+    st.session_state.current_user = ""
+    st.rerun()
+
+st.sidebar.markdown("---")
+
 kategori_data = st.sidebar.radio(
     "👥 Pilih Kategori Data:",
     ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "📄 Nomor SPTJB"]
@@ -188,7 +253,6 @@ kategori_data = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 
-# Mengatur menu khusus SPTJB (Hanya Lihat & Cari Data saja)
 if kategori_data == "📄 Nomor SPTJB":
     menu = st.sidebar.selectbox(
         "Pilih Menu Navigasi",
