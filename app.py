@@ -81,7 +81,7 @@ if not st.session_state.logged_in:
 # 1. Link untuk menu Nomor SPTJB (Umum)
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
 
-# 2. Link untuk menu Verifikator SPTJB (Khusus)
+# 2. Link untuk menu Verifikator SPTJB (Bu Wadek)
 URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 
 def convert_sheets_url(url):
@@ -267,6 +267,7 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
+# Khusus memuat data Verifikator (Baris 9 / index 8, Kolom D, F, M, BZ, CA -> Index: 3, 5, 12, 77, 78)
 def load_data_verifikator():
     if not URL_VERIF:
         return pd.DataFrame()
@@ -274,11 +275,13 @@ def load_data_verifikator():
         df = pd.read_csv(URL_VERIF, header=8, dtype=str)
         df.columns = df.columns.str.strip()
         
-        target_indices_verif = [3, 5, 8, 12, 77, 78]
+        # Mapping kolom Excel: D=3, F=5, M=12, BZ=77, CA=78 (berdasarkan baris header ke-9)
+        target_indices_verif = [3, 5, 12, 77, 78]
         valid_indices = [i for i in target_indices_verif if i < len(df.columns)]
         if valid_indices:
             df = df.iloc[:, valid_indices]
 
+        # Membersihkan kolom yang mengandung kata status, verifikasi, atau anggaran jika ada
         cols_to_keep = [col for col in df.columns if not any(kw in col.lower() for kw in ["status", "verifikasi", "anggaran"])]
         df = df[cols_to_keep]
 
@@ -287,6 +290,7 @@ def load_data_verifikator():
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
+        # Menambahkan kolom Checklist di sebelah kanan kolom perencanaan/siat
         target_col_idx = -1
         for idx, col_name in enumerate(df.columns):
             if any(k in col_name.lower() for k in ["siat", "perencanaan", "proses"]):
@@ -301,7 +305,7 @@ def load_data_verifikator():
         df = df.dropna(how='all')
         return df.fillna("")
     except Exception as e:
-        st.error(f"Gagal memuat data Verifikator SPTJB: {e}")
+        st.error(f"Gagal memuat data Verifikator Bu Wadek: {e}")
         return pd.DataFrame()
 
 def simpan_backup():
