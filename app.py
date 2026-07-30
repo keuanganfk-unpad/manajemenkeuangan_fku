@@ -327,6 +327,7 @@ if st.session_state.current_role == "verifikator":
     st.sidebar.radio("👥 Pilih Kategori Data:", [kategori_data])
     st.sidebar.markdown("---")
     menu = st.sidebar.selectbox("Pilih Menu Navigasi", [
+        "🏠 Home / Beranda",
         "🔍 Verifikasi & Cek Dokumen SPTJB"
     ])
     st.sidebar.markdown("---")
@@ -343,11 +344,11 @@ else:
     st.sidebar.markdown("---")
 
     if kategori_data == "📄 Nomor SPTJB":
-        menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["📋 Lihat & Cari Data"])
+        menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["🏠 Home / Beranda", "📋 Lihat & Cari Data"])
     else:
         menu = st.sidebar.selectbox(
             "Pilih Menu Navigasi",
-            ["📋 Lihat & Cari Data", "➕ Tambah Data Baru", "✏️ Edit Data", "🗑️ Hapus Data", "📥 Unduh / Simpan ke Excel"],
+            ["🏠 Home / Beranda", "📋 Lihat & Cari Data", "➕ Tambah Data Baru", "✏️ Edit Data", "🗑️ Hapus Data", "📥 Unduh / Simpan ke Excel"],
         )
 
     st.sidebar.markdown("---")
@@ -372,7 +373,83 @@ def clean_val(val):
 # ==========================================
 # KONTEN UTAMA APLIKASI
 # ==========================================
-if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
+if menu == "🏠 Home / Beranda":
+    st.markdown(
+        """
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 35px; border-radius: 12px; color: white; margin-bottom: 25px;">
+            <h1 style="margin: 0; font-size: 2.3rem;">👋 Selamat Datang di Sistem RENCANG</h1>
+            <p style="font-size: 1.15rem; margin-top: 10px; opacity: 0.9;">
+                Platform Terintegrasi Perencanaan dan Keuangan Fakultas Kedokteran Universitas Padjadjaran.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("### 📌 **Informasi & Statistik Sistem**")
+    
+    col_h1, col_h2, col_h3 = st.columns(3)
+    with col_h1:
+        st.markdown(
+            f"""
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
+                <h3 style="color: #1e3a8a; margin: 0; font-size: 1.8rem;">{len(st.session_state.df_dosen)}</h3>
+                <p style="color: #64748b; margin-top: 5px; font-weight: 600;">Total Data Dosen</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with col_h2:
+        st.markdown(
+            f"""
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
+                <h3 style="color: #0d9488; margin: 0; font-size: 1.8rem;">{len(st.session_state.df_staff)}</h3>
+                <p style="color: #64748b; margin-top: 5px; font-weight: 600;">Total Data Staff / Tendik</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with col_h3:
+        st.markdown(
+            f"""
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
+                <h3 style="color: #d97706; margin: 0; font-size: 1.8rem;">{len(st.session_state.df_verif_sptjb)}</h3>
+                <p style="color: #64748b; margin-top: 5px; font-weight: 600;">Total Data Verifikasi SPTJB</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 🧭 **Panduan Navigasi & Fitur Utama**")
+    
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        st.markdown(
+            """
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; height: 100%;">
+                <h4 style="color: #1e3a8a; margin-top: 0;">📋 Pengelolaan Data Dosen & Staff</h4>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.5;">
+                    Gunakan menu di sidebar untuk melakukan pencarian data civitas, menambahkan data baru, memperbarui informasi profil, menghapus data, hingga mengunduh laporan langsung dalam format Excel secara mudah.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with col_f2:
+        st.markdown(
+            """
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; height: 100%;">
+                <h4 style="color: #047857; margin-top: 0;">✔️ Panel Verifikasi & Cek Dokumen</h4>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.5;">
+                    Khusus untuk Tim Verifikator, menu ini menyajikan rekam jejak SPTJB lengkap dengan akses tautan dokumen langsung, checklist verifikasi, serta fitur rincian data interaktif untuk transparansi keuangan.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     st.markdown(
         f"""
         <div class="sticky-wrapper">
@@ -413,28 +490,24 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         column_config=column_config_dict
     )
 
-    # --- FITUR PILIH BARIS INTERAKTIF UNTUK MELIHAT DETAIL ---
     if len(df_verif) > 0:
         st.markdown("---")
-        st.markdown("### 🔍 **Pilih Nomor Baris untuk Melihat Rincian Detail**")
+        st.markdown("### 🔍 **Pilih Baris Data untuk Melihat Detail Lengkap**")
         
-        # Membuat pilihan dropdown berdasarkan nomor urut (No.) dan isi baris
-        row_options = [f"Baris ke-{row['No.']} (Data ID: {row.iloc[1] if len(row) > 1 else 'N/A'})" for _, row in df_verif.iterrows()]
-        selected_row_label = st.selectbox("Pilih baris data:", row_options)
+        row_options = [f"Baris No. {row['No.']} — ({row.iloc[1] if len(row) > 1 else 'Data'})" for _, row in df_verif.iterrows()]
+        selected_option = st.selectbox("Pilih baris yang ingin diperiksa rinciannya:", row_options)
         
-        if selected_row_label:
-            # Ambil indeks nomor baris yang dipilih
-            selected_idx = row_options.index(selected_row_label)
+        if selected_option:
+            selected_idx = row_options.index(selected_option)
             selected_data = df_verif.iloc[selected_idx]
             
-            st.markdown(f"**📌 Rincian Lengkap untuk Baris #{selected_data['No.']}:**")
+            st.markdown(f"**📌 Rincian Lengkap Baris #{selected_data['No.']} :**")
             
-            # Tampilkan rincian dalam kotak tabel vertikal rapi
-            detail_list = []
+            detail_items = []
             for col_name, val in selected_data.items():
-                detail_list.append({"Atribut Kolom": col_name, "Isi / Nilai Data": val})
+                detail_items.append({"Nama Kolom": col_name, "Isi Data": val})
             
-            detail_df = pd.DataFrame(detail_list)
+            detail_df = pd.DataFrame(detail_items)
             st.dataframe(detail_df, use_container_width=True, hide_index=True)
 
 elif menu == "📋 Lihat & Cari Data":
