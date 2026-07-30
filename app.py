@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
+    page_title="Sistem Informasi Rencang FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -49,7 +49,7 @@ if not st.session_state.logged_in:
         st.markdown(
             """
             <div style="text-align: center; padding: 20px; border: 1px solid #d1d5db; border-radius: 10px; background-color: #f9fafb;">
-                <h2>🔐 Login Sistem Rencang FK UNPAD</h2>
+                <h2>🔐 Login Sistem FK UNPAD</h2>
                 <p style="color: gray;">Silakan masukkan User ID dan Password Anda</p>
             </div>
             """, 
@@ -110,17 +110,14 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (MEMPERBAIKI TOTAL HEADER TERPOTONG)
+# CSS KHUSUS
 # ==========================================
 st.markdown(
     f"""
     <style>
-    /* Mengatur jarak aman di bagian atas agar header tidak terpotong oleh sistem Streamlit */
     .block-container {{
         padding-top: 2.5rem !important;
     }}
-    
-    /* Header Utama dibuat statis aman tanpa terpotong */
     .header-container {{
         display: flex;
         align-items: center;
@@ -147,8 +144,6 @@ st.markdown(
         margin-top: 4px;
         font-weight: 500;
     }}
-    
-    /* Kontainer Sticky untuk Subheader / Judul Halaman & Metrik */
     .sticky-wrapper {{
         position: sticky;
         top: 0rem;
@@ -331,7 +326,10 @@ if st.session_state.current_role == "verifikator":
     kategori_data = "✔️ Verifikator SPTJB"
     st.sidebar.radio("👥 Pilih Kategori Data:", [kategori_data])
     st.sidebar.markdown("---")
-    menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["🔍 Verifikasi & Cek Dokumen SPTJB"])
+    menu = st.sidebar.selectbox("Pilih Menu Navigasi", [
+        "🔍 Verifikasi & Cek Dokumen SPTJB", 
+        "📊 Jumlah Ajuan masing masing prodi"
+    ])
     st.sidebar.markdown("---")
     st.sidebar.info("Anda berada di **Mode Verifikator Khusus**")
     
@@ -415,6 +413,61 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         hide_index=True,
         column_config=column_config_dict
     )
+
+elif menu == "📊 Jumlah Ajuan masing masing prodi":
+    st.markdown(
+        """
+        <div class="sticky-wrapper">
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Grafik Jumlah Ajuan & Nominal per Program Studi</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Ringkasan data per Prodi / Departemen</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    if len(df_aktif) > 0:
+        prodi_col = None
+        nominal_col = None
+        for col in df_aktif.columns:
+            col_l = col.lower()
+            if any(k in col_l for k in ["prodi", "departemen", "unit", "bagian", "program"]):
+                prodi_col = col
+            if any(k in col_l for k in ["nominal", "jumlah", "biaya", "pagu", "rp"]):
+                nominal_col = col
+                
+        if not prodi_col and len(df_aktif.columns) > 1:
+            prodi_col = df_aktif.columns[1]
+        if not nominal_col and len(df_aktif.columns) > 2:
+            nominal_col = df_aktif.columns[-2]
+
+        if prodi_col:
+            try:
+                df_chart = df_aktif.copy()
+                if nominal_col:
+                    df_chart[nominal_col] = df_chart[nominal_col].astype(str).str.replace(r'[^0-9.]', '', regex=True)
+                    df_chart[nominal_col] = pd.to_numeric(df_chart[nominal_col], errors='coerce').fillna(0)
+                    summary_df = df_chart.groupby(prodi_col).agg(
+                        Jumlah_Ajuan=(prodi_col, 'count'),
+                        Total_Nominal=(nominal_col, 'sum')
+                    ).reset_index()
+                else:
+                    summary_df = df_chart.groupby(prodi_col).size().reset_index(name='Jumlah_Ajuan')
+
+                col_g1, col_g2 = st.columns(2)
+                with col_g1:
+                    st.markdown("### **Jumlah Ajuan per Prodi**")
+                    st.bar_chart(summary_df.set_index(prodi_col)['Jumlah_Ajuan'])
+                
+                if nominal_col and 'Total_Nominal' in summary_df.columns:
+                    with col_g2:
+                        st.markdown("### **Total Nominal (Rp) per Prodi**")
+                        st.bar_chart(summary_df.set_index(prodi_col)['Total_Nominal'])
+            except Exception as e:
+                st.info(f"⚠️ Gagal merender grafik: {e}")
+        else:
+            st.info("Kolom prodi/departemen tidak terdeteksi untuk pembuatan grafik.")
+    else:
+        st.warning("Data verifikator kosong atau belum terhubung.")
 
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
