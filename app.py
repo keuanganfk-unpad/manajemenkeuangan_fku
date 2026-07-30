@@ -436,7 +436,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
         """
         <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi & Jumlah Ajuan Masing-Masing Prodi</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Google Sheet SPTJB (Kolom J9: Prodi & Kolom T9: Jumlah Nominal)</p>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Google Sheet SPTJB (Kolom J9: Prodi & Kolom T9: Jumlah Nominal Real)</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -473,10 +473,10 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             summary_df = summary_df.sort_values(by="Jumlah_Ajuan", ascending=False).reset_index(drop=True)
             
-            # Membuat salinan dataframe dengan format Rupiah untuk tabel tampilan
+            # Format rupiah real (tanpa pembagian satuan ribu, langsung nilai penuh)
             summary_table_display = summary_df.copy()
             summary_table_display["Total_Nominal_Num"] = summary_table_display["Total_Nominal_Num"].apply(lambda x: f"Rp {x:,.0f}".replace(",", "."))
-            summary_table_display.columns = ["Program Studi / Kategori", "Jumlah Ajuan", "Total Nominal (Rp)"]
+            summary_table_display.columns = ["Program Studi / Kategori", "Jumlah Ajuan", "Total Nominal (Rp Real)"]
 
             st.markdown("### 📋 Tabel Rekapitulasi per Program Studi")
             st.dataframe(summary_table_display, use_container_width=True, hide_index=True)
@@ -488,7 +488,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
                 st.bar_chart(summary_df.set_index("PRODI_GROUP")['Jumlah_Ajuan'])
             
             with col_g2:
-                st.markdown("### **Grafik Total Nominal per Prodi**")
+                st.markdown("### **Grafik Total Nominal Real per Prodi**")
                 st.bar_chart(summary_df.set_index("PRODI_GROUP")['Total_Nominal_Num'])
         except Exception as e:
             st.info(f"⚠️ Gagal memproses rekapitulasi data prodi: {e}")
