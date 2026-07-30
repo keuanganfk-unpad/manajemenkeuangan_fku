@@ -278,6 +278,21 @@ def load_data_verifikator():
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
+        # Format nilai kolom realisasi/nominal agar berawalan "Rp"
+        for col in df.columns:
+            if any(k in col.lower() for k in ["nominal", "realisasi", "jumlah", "biaya"]):
+                def format_rp(val):
+                    s = str(val).strip()
+                    if not s or s.lower() == 'nan':
+                        return ""
+                    s_clean = re.sub(r'[^0-9.-]', '', s.replace(',', ''))
+                    try:
+                        num = float(s_clean)
+                        return f"Rp {num:,.0f}".replace(",", ".")
+                    except:
+                        return s
+                df[col] = df[col].apply(format_rp)
+
         df = df.dropna(how='all').reset_index(drop=True)
         df.insert(0, "No.", range(1, len(df) + 1))
 
@@ -297,7 +312,7 @@ def load_data_verifikator():
         st.error(f"Gagal memuat data Verifikator Bu Wadek: {e}")
         return pd.DataFrame()
 
-# Khusus memuat rekapitulasi secara cerdas dengan mendeteksi kolom "NAMA USER" dan "REALISASI"
+# Khusus memuat rekapitulasi dari Google Sheets SPTJB berdasarkan Nama User (Kolom S9 = index 18) & Realisasi (Kolom T9 = index 19)
 def load_data_rekap_user():
     if not URL_SPTJB:
         return pd.DataFrame()
@@ -449,12 +464,43 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         column_config=column_config_dict
     )
 
+    # --- FITUR TOTAL KESELURUHAN REALISASI DI BAWAH TABEL ---
+    try:
+        # Mencari kolom yang berisi realisasi atau nominal pada dataframe verifikasi
+        target_realisasi_col = None
+        for col in edited_df_verif.columns:
+            if any(k in col.lower() for k in ["nominal", "realisasi", "jumlah", "biaya"]):
+                target_realisasi_col = col
+                break
+        
+        if target_realisasi_col:
+            total_sum = 0.0
+            for val in edited_df_verif[target_realisasi_col].values:
+                s = str(val).replace('Rp', '').replace('.', '').replace(',', '').strip()
+                try:
+                    total_sum += float(s)
+                except:
+                    pass
+            
+            formatted_total = f"Rp {total_sum:,.0f}".replace(",", ".")
+            st.markdown(
+                f"""
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; border: 1px solid #d1d5db; margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 1.1rem; font-weight: 600; color: #1f2937;">💰 Total Keseluruhan Realisasi:</span>
+                    <span style="font-size: 1.3rem; font-weight: 700; color: #047857;">{formatted_total}</span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+    except Exception as e:
+        pass
+
 elif menu == "📊 Jumlah Ajuan masing masing prodi":
     st.markdown(
         """
         <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Akumulasi Realisasi Berdasarkan Nama User</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Penjumlahan total realisasi otomatis per user (tanpa pengali ribuan)</p>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Penjumlahan total realisasi otomatis per user dengan format Rupiah</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -471,12 +517,10 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             df_rekap_raw["USER_CLEAN"] = df_rekap_raw["NAMA_USER"].apply(clean_user_name)
             
-            # Logika Pembersihan: Menghapus koma pemisah ribuan secara presisi tanpa dikalikan 1000
             def parse_realisasi(val):
                 s = str(val).strip()
                 if not s or s.lower() == 'nan':
                     return 0.0
-                # Menghapus koma pemisah ribuan (contoh: "1,295,000" menjadi "1295000")
                 s_clean = s.replace(',', '')
                 s_clean = re.sub(r'[^0-9.-]', '', s_clean)
                 try:
@@ -486,7 +530,6 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             df_rekap_raw["REALISASI_NUM"] = df_rekap_raw["REALISASI"].apply(parse_realisasi)
 
-            # Logika Penjumlahan (Akumulasi Total): Groupby User, Hitung Jumlah Ajuan, dan Jumlahkan Total Realisasi
             summary_df = df_rekap_raw.groupby("USER_CLEAN").agg(
                 Jumlah_Ajuan=("USER_CLEAN", 'count'),
                 Total_Realisasi_Num=("REALISASI_NUM", 'sum')
