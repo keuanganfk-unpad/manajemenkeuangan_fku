@@ -78,7 +78,7 @@ if not st.session_state.logged_in:
 # ==========================================
 # LINK GOOGLE SHEETS SPTJB (Tempel link Google Sheets biasa Anda di sini)
 # ==========================================
-URL_ASLI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
+URL_ASLI = "MASUKKAN_LINK_GOOGLE_SHEETS_ANDA_DI_SINI"
 
 def convert_sheets_url(url):
     if "export?format=csv" in url:
@@ -196,13 +196,20 @@ def load_data_staff():
 
 def load_data_sptjb():
     try:
-        df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
+        # Mengubah header menjadi baris ke-10 (index 10 / baris ke-11 di Excel/Sheets) agar data terbaca dengan benar
+        df = pd.read_csv(URL_SPTJB, header=10, dtype=str)
         df.columns = df.columns.str.strip()
         
         target_indices = [2, 4, 6, 9, 10, 18, 19, 84, 86, 87]
         valid_indices = [i for i in target_indices if i < len(df.columns)]
         if valid_indices:
             df = df.iloc[:, valid_indices]
+
+        # Membersihkan nama kolom duplikat agar unik
+        cols = pd.Series(df.columns)
+        for dup in cols[cols.duplicated()].unique(): 
+            cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
+        df.columns = cols
 
         def clean_date_format(val):
             val_str = str(val).strip()
@@ -221,15 +228,17 @@ def load_data_sptjb():
             if "nominal" in col.lower():
                 df[col] = df[col].astype(str).str.replace(r'\.0$', '', regex=True).replace('nan', '')
 
+        # Hapus baris yang seluruhnya kosong / NaN
+        df = df.dropna(how='all')
         return df.fillna("")
     except Exception as e:
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Khusus memuat data Verifikator (Baris 9 / index 8, Kolom D, F, I, M, BZ, CA) tanpa kolom status, verifikasi, atau anggaran
+# Khusus memuat data Verifikator (Baris 11 / index 10, Kolom D, F, I, M, BZ, CA)
 def load_data_verifikator():
     try:
-        df = pd.read_csv(URL_SPTJB, header=8, dtype=str)
+        df = pd.read_csv(URL_SPTJB, header=10, dtype=str)
         df.columns = df.columns.str.strip()
         
         target_indices_verif = [3, 5, 8, 12, 77, 78]
@@ -257,6 +266,7 @@ def load_data_verifikator():
         else:
             df["Checklist"] = False
 
+        df = df.dropna(how='all')
         return df.fillna("")
     except Exception as e:
         st.error(f"Gagal memuat data Verifikator SPTJB: {e}")
@@ -337,8 +347,50 @@ def clean_val(val):
 # ==========================================
 if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     st.subheader("✔️ Panel Khusus Verifikator SPTJB")
-    st.markdown("")
+    st.markdown("Data bersumber dari Google Sheets SPTJB (Baris 11: Kolom D, F, I, M, BZ, CA).")
     st.metric("Total Data Verifikasi SPTJB", len(df_aktif))
+    st.markdown("---")
+
+    # Grafik Ringkasan per Prodi
+    st.markdown("### 📊 Grafik Ringkasan per Program Studi (Prodi)")
+    if len(df_aktif) > 0:
+        prodi_col = None
+        nominal_col = None
+        for col in df_aktif.columns:
+            col_l = col.lower()
+            if any(k in col_l for k in ["prodi", "departemen", "unit", "bagian", "program"]):
+                prodi_col = col
+            if any(k in col_l for k in ["nominal", "jumlah", "biaya", "pagu", "rp"]):
+                nominal_col = col
+                
+        if not prodi_col and len(df_aktif.columns) > 1:
+            prodi_col = df_aktif.columns[1]
+        if not nominal_col and len(df_aktif.columns) > 2:
+            nominal_col = df_aktif.columns[-2]
+
+        if prodi_col:
+            try:
+                df_chart = df_aktif.copy()
+                if nominal_col:
+                    df_chart[nominal_col] = df_chart[nominal_col].astype(str).str.replace(r'[^0-9.]', '', regex=True)
+                    df_chart[nominal_col] = pd.to_numeric(df_chart[nominal_col], errors='coerce').fillna(0)
+                    summary_df = df_chart.groupby(prodi_col).agg(
+                        Jumlah_Ajuan=(prodi_col, 'count'),
+                        Total_Nominal=(nominal_col, 'sum')
+                    ).reset_index()
+                else:
+                    summary_df = df_chart.groupby(prodi_col).size().reset_index(name='Jumlah_Ajuan')
+
+                col_g1, col_g2 = st.columns(2)
+                with col_g1:
+                    st.markdown("**Jumlah Ajuan per Prodi**")
+                    st.bar_chart(summary_df.set_index(prodi_col)['Jumlah_Ajuan'])
+                if nominal_col and 'Total_Nominal' in summary_df.columns:
+                    with col_g2:
+                        st.markdown("**Total Nominal (Rp) per Prodi**")
+                        st.bar_chart(summary_df.set_index(prodi_col)['Total_Nominal'])
+            except:
+                pass
     st.markdown("---")
 
     keyword_verif = st.text_input("Cari data verifikasi SPTJB:", placeholder="Ketik kata kunci...")
@@ -363,8 +415,6 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
             )
 
     st.markdown("**Daftar Tabel Verifikasi SPTJB:**")
-    
-    # Menggunakan st.data_editor agar kolom Checklist bisa dicentang secara interaktif oleh user
     edited_df_verif = st.data_editor(
         df_verif,
         use_container_width=True,
