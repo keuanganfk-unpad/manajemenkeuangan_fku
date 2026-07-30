@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Informasi Rencang FK UNPAD",
+    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -49,7 +49,7 @@ if not st.session_state.logged_in:
         st.markdown(
             """
             <div style="text-align: center; padding: 20px; border: 1px solid #d1d5db; border-radius: 10px; background-color: #f9fafb;">
-                <h2>🔐 Login Rencang </h2>
+                <h2>🔐 Login Rencang<br>FK Unpad</h2>
                 <p style="color: gray;">Silakan masukkan User ID dan Password Anda</p>
             </div>
             """, 
@@ -379,7 +379,7 @@ if menu == "🏠 Home / Beranda":
         <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 35px; border-radius: 12px; color: white; margin-bottom: 25px;">
             <h1 style="margin: 0; font-size: 2.3rem;">👋 Selamat Datang di Sistem RENCANG</h1>
             <p style="font-size: 1.15rem; margin-top: 10px; opacity: 0.9;">
-               Sistem Informasi Perencanaan dan Keuangan Fakultas Kedokteran Universitas Padjadjaran.
+                Platform Terintegrasi Perencanaan dan Keuangan Fakultas Kedokteran Universitas Padjadjaran.
             </p>
         </div>
         """,
@@ -419,6 +419,33 @@ if menu == "🏠 Home / Beranda":
             """,
             unsafe_allow_html=True
         )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### ⚡ **Akses Cepat Fitur Utama (Sesuai Hak Akses Anda)**")
+    
+    col_btn1, col_btn2 = st.columns(2)
+    
+    with col_btn1:
+        if st.button("📋 Buka Menu Pengelolaan Data", use_container_width=True):
+            if st.session_state.current_role == "verifikator":
+                st.warning("⚠️ Akun Anda adalah Tim Verifikator. Akses menu pengelolaan data khusus untuk Staf/Admin.")
+            elif st.session_state.current_role in ["admin", "user"]:
+                st.success("✅ Mengarahkan ke menu Lihat & Cari Data...")
+                time.sleep(0.8)
+                st.rerun()
+            else:
+                st.error("❌ Akses ditolak: Status Hak Akses (Role) Anda tidak valid atau tidak dikenali.")
+
+    with col_btn2:
+        if st.button("✔️ Buka Panel Verifikasi SPTJB", use_container_width=True):
+            if st.session_state.current_role == "verifikator" or st.session_state.current_role == "admin":
+                st.success("✅ Mengarahkan ke Panel Verifikator...")
+                time.sleep(0.8)
+                st.rerun()
+            elif st.session_state.current_role == "user":
+                st.warning("⚠️ Akses Terbatas: Akun Staf/User umum tidak memiliki hak akses khusus ke Panel Verifikator.")
+            else:
+                st.error("❌ Akses ditolak: Pengguna tidak dikenali.")
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🧭 **Panduan Navigasi & Fitur Utama**")
