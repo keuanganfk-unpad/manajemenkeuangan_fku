@@ -297,20 +297,41 @@ def load_data_verifikator():
         st.error(f"Gagal memuat data Verifikator Bu Wadek: {e}")
         return pd.DataFrame()
 
-# Khusus memuat rekapitulasi dari Google Sheets SPTJB berdasarkan Nama User (Kolom S9 = index 18) & Realisasi (Kolom T9 = index 19)
+# Khusus memuat rekapitulasi secara cerdas dengan mendeteksi kolom "NAMA USER" dan "REALISASI"
 def load_data_rekap_user():
     if not URL_SPTJB:
         return pd.DataFrame()
     try:
+        # Baca tanpa header dulu untuk memindai posisi baris header dan nama kolom
         df_raw = pd.read_csv(URL_SPTJB, header=None, dtype=str)
-        if len(df_raw.columns) > 19:
-            df_rekap = df_raw.iloc[9:, [18, 19]].copy()
-            user_header = str(df_raw.iloc[8, 18]).strip() if pd.notna(df_raw.iloc[8, 18]) else "Nama User"
-            realisasi_header = str(df_raw.iloc[8, 19]).strip() if pd.notna(df_raw.iloc[8, 19]) else "Realisasi"
-            df_rekap.columns = [user_header, realisasi_header]
-            df_rekap = df_rekap.dropna(subset=[user_header])
-            return df_rekap.fillna("")
-        return pd.DataFrame()
+        
+        user_col_idx = -1
+        realisasi_col_idx = -1
+        header_row_idx = -1
+
+        # Cari baris yang mengandung "NAMA USER" dan "REALISASI"
+        for r_idx in range(min(15, len(df_raw))):
+            row_vals = [str(val).strip().upper() for val in df_raw.iloc[r_idx].values]
+            for c_idx, val in enumerate(row_vals):
+                if "NAMA USER" in val or val == "NAMA USER":
+                    user_col_idx = c_idx
+                    header_row_idx = r_idx
+                elif "REALISASI" in val or val == "REALISASI":
+                    realisasi_col_idx = c_idx
+                    if header_row_idx == -1:
+                        header_row_idx = r_idx
+            if user_col_idx != -1 and realisasi_col_idx != -1:
+                break
+
+        # Jika tidak ketemu secara spesifik, fallback ke indeks kolom S (18) dan T (19)
+        if user_col_idx == -1: user_col_idx = 18
+        if realisasi_col_idx == -1: realisasi_col_idx = 19
+        if header_row_idx == -1: header_row_idx = 8
+
+        df_rekap = df_raw.iloc[header_row_idx + 1:, [user_col_idx, realisasi_col_idx]].copy()
+        df_rekap.columns = ["NAMA_USER", "REALISASI"]
+        df_rekap = df_rekap.dropna(subset=["NAMA_USER"])
+        return df_rekap.fillna("")
     except Exception as e:
         return pd.DataFrame()
 
@@ -435,8 +456,8 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
     st.markdown(
         """
         <div class="sticky-wrapper">
-            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Berdasarkan Nama User & Akumulasi Realisasi</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Kolom S9 (Nama User) & Kolom T9 (Realisasi) dengan pembersihan format angka presisi</p>
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi Berdasarkan Kolom NAMA USER & REALISASI</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Pembersihan koma ribuan dan penjumlahan akumulatif otomatis</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -445,30 +466,26 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
     df_rekap_raw = load_data_rekap_user()
     if len(df_rekap_raw) > 0:
         try:
-            user_c = df_rekap_raw.columns[0]
-            realisasi_c = df_rekap_raw.columns[1]
-
             def clean_user_name(val):
                 v = str(val).strip().upper()
-                if not v or v == 'NAN':
+                if not v or v == 'NAN' or v == '-':
                     return "TIDAK DIKETAHUI"
                 return v
 
-            df_rekap_raw["USER_CLEAN"] = df_rekap_raw[user_c].apply(clean_user_name)
+            df_rekap_raw["USER_CLEAN"] = df_rekap_raw["NAMA_USER"].apply(clean_user_name)
             
-            # Logika Pembersihan Angka Presisi: Menghilangkan koma ribuan agar terbaca secara tepat
+            # Logika Pembersihan: Menghapus koma pemisah ribuan (misal "1,295,000" -> 1295000)
             def parse_realisasi(val):
                 s = str(val).strip()
                 if not s or s.lower() == 'nan':
                     return 0.0
-                # Hapus karakter selain angka, titik, dan minus
                 s_clean = re.sub(r'[^0-9.-]', '', s.replace(',', ''))
                 try:
                     return float(s_clean)
                 except:
                     return 0.0
 
-            df_rekap_raw["REALISASI_NUM"] = df_rekap_raw[realisasi_c].apply(parse_realisasi)
+            df_rekap_raw["REALISASI_NUM"] = df_rekap_raw["REALISASI"].apply(parse_realisasi)
 
             # Logika Akumulasi: Groupby User, Hitung Jumlah Ajuan, dan Jumlahkan Total Realisasi
             summary_df = df_rekap_raw.groupby("USER_CLEAN").agg(
@@ -497,7 +514,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
         except Exception as e:
             st.info(f"⚠️ Gagal memproses rekapitulasi data user: {e}")
     else:
-        st.warning("Data Google Sheet SPTJB kosong atau link URL belum dikonfigurasi dengan benar.")
+        st.warning("Data Google Sheet SPTJB kosong atau kolom 'NAMA USER' dan 'REALISASI' tidak ditemukan.")
 
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
