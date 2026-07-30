@@ -253,19 +253,6 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Fungsi pembersih angka untuk perhitungan total grand total
-def parse_realisasi_value(val):
-    s = str(val).strip()
-    if not s or s.lower() == 'nan' or s == '-':
-        return 0.0
-    s_clean = s.replace('Rp', '').replace('rp', '').strip()
-    s_clean = s_clean.replace(',', '')
-    s_clean = re.sub(r'[^0-9.]', '', s_clean)
-    try:
-        return float(s_clean)
-    except:
-        return 0.0
-
 # Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12 [Kolom M9], BZ=77, CA=78)
 def load_data_verifikator():
     if not URL_VERIF:
@@ -291,7 +278,6 @@ def load_data_verifikator():
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
 
-        # Kolom Realisasi (Kolom M9) dibiarkan tampil bersih sesuai aslinya dari Google Sheet tanpa modifikasi teks paksa
         df = df.dropna(how='all').reset_index(drop=True)
         df.insert(0, "No.", range(1, len(df) + 1))
 
@@ -426,31 +412,6 @@ if menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         hide_index=True,
         column_config=column_config_dict
     )
-
-    try:
-        target_realisasi_col = None
-        for col in edited_df_verif.columns:
-            if any(k in col.lower() for k in ["nominal", "realisasi", "jumlah", "biaya"]):
-                target_realisasi_col = col
-                break
-        
-        if target_realisasi_col:
-            total_sum = 0.0
-            for val in edited_df_verif[target_realisasi_col].values:
-                total_sum += parse_realisasi_value(val)
-            
-            formatted_total = f"Rp {total_sum:,.0f}".replace(",", ".")
-            st.markdown(
-                f"""
-                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; border: 1px solid #d1d5db; margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 1.1rem; font-weight: 600; color: #1f2937;">💰 Total Keseluruhan Realisasi:</span>
-                    <span style="font-size: 1.3rem; font-weight: 700; color: #047857;">{formatted_total}</span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-    except Exception as e:
-        pass
 
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
