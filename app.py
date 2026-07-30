@@ -436,7 +436,7 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
         """
         <div class="sticky-wrapper">
             <h2 style="margin:0; padding:0; font-size: 1.75rem;">📊 Rekapitulasi & Jumlah Ajuan Masing-Masing Prodi</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Google Sheet SPTJB (Kolom J9: Prodi & Kolom T9: Jumlah Nominal Real)</p>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Data diambil dari Google Sheet SPTJB (Kolom J9: Prodi & Kolom T9: Jumlah Nominal Real Penuh)</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -464,7 +464,9 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             df_rekap_raw["PRODI_GROUP"] = df_rekap_raw[prodi_c].apply(standard_prodi)
             df_rekap_raw[nominal_c] = df_rekap_raw[nominal_c].astype(str).str.replace(r'[^0-9.]', '', regex=True)
-            df_rekap_raw[nominal_c] = pd.to_numeric(df_rekap_raw[nominal_c], errors='coerce').fillna(0)
+            
+            # Dikalikan 1000 agar nilai real penuh tampil (bukan ribuan kecil)
+            df_rekap_raw[nominal_c] = pd.to_numeric(df_rekap_raw[nominal_c], errors='coerce').fillna(0) * 1000
 
             summary_df = df_rekap_raw.groupby("PRODI_GROUP").agg(
                 Jumlah_Ajuan=("PRODI_GROUP", 'count'),
@@ -473,7 +475,6 @@ elif menu == "📊 Jumlah Ajuan masing masing prodi":
 
             summary_df = summary_df.sort_values(by="Jumlah_Ajuan", ascending=False).reset_index(drop=True)
             
-            # Format rupiah real (tanpa pembagian satuan ribu, langsung nilai penuh)
             summary_table_display = summary_df.copy()
             summary_table_display["Total_Nominal_Num"] = summary_table_display["Total_Nominal_Num"].apply(lambda x: f"Rp {x:,.0f}".replace(",", "."))
             summary_table_display.columns = ["Program Studi / Kategori", "Jumlah Ajuan", "Total Nominal (Rp Real)"]
