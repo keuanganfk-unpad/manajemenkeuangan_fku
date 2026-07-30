@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
+    page_title="Sistem Informasi Rencang FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -49,7 +49,7 @@ if not st.session_state.logged_in:
         st.markdown(
             """
             <div style="text-align: center; padding: 20px; border: 1px solid #d1d5db; border-radius: 10px; background-color: #f9fafb;">
-                <h2>🔐 Login Rencang<br>FK Unpad</h2>
+                <h2>🔐 Login Rencang </h2>
                 <p style="color: gray;">Silakan masukkan User ID dan Password Anda</p>
             </div>
             """, 
@@ -379,7 +379,7 @@ if menu == "🏠 Home / Beranda":
         <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 35px; border-radius: 12px; color: white; margin-bottom: 25px;">
             <h1 style="margin: 0; font-size: 2.3rem;">👋 Selamat Datang di Sistem RENCANG</h1>
             <p style="font-size: 1.15rem; margin-top: 10px; opacity: 0.9;">
-                Platform Terintegrasi Perencanaan dan Keuangan Fakultas Kedokteran Universitas Padjadjaran.
+               Sistem Informasi Perencanaan dan Keuangan Fakultas Kedokteran Universitas Padjadjaran.
             </p>
         </div>
         """,
