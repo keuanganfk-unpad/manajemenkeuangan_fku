@@ -281,7 +281,6 @@ def load_data_verifikator():
         if valid_indices:
             df = df.iloc[:, valid_indices]
 
-        # Membersihkan kolom yang mengandung kata status, verifikasi, atau anggaran jika ada
         cols_to_keep = [col for col in df.columns if not any(kw in col.lower() for kw in ["status", "verifikasi", "anggaran"])]
         df = df[cols_to_keep]
 
@@ -289,6 +288,11 @@ def load_data_verifikator():
         for dup in cols[cols.duplicated()].unique(): 
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
         df.columns = cols
+
+        df = df.dropna(how='all').reset_index(drop=True)
+
+        # Menambahkan kolom No. otomatis di sebelah kiri kolom pertama (Perihal)
+        df.insert(0, "No.", range(1, len(df) + 1))
 
         # Menambahkan kolom Checklist di sebelah kanan kolom perencanaan/siat
         target_col_idx = -1
@@ -302,7 +306,6 @@ def load_data_verifikator():
         else:
             df["Checklist"] = False
 
-        df = df.dropna(how='all')
         return df.fillna("")
     except Exception as e:
         st.error(f"Gagal memuat data Verifikator Bu Wadek: {e}")
