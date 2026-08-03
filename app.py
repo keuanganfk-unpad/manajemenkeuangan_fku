@@ -10,7 +10,7 @@ import re
 # KONFIGURASI HALAMAN
 # ==========================================
 st.set_page_config(
-    page_title="Sistem Manajemen Data Terintegrasi FK UNPAD",
+    page_title="Dashboard Sistem Informasi RENCANG FK UNPAD",
     page_icon="🏥",
     layout="wide",
 )
@@ -48,7 +48,7 @@ if not st.session_state.logged_in:
     with col_l2:
         st.markdown(
             """
-            <div style="text-align: center; padding: 20px; border: 1px solid #d1d5db; border-radius: 10px; background-color: #f9fafb;">
+            <div style="text-align: center; padding: 25px; border: 1px solid #d1d5db; border-radius: 12px; background-color: #f9fafb; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                 <h2>🔐 Login Rencang<br>FK Unpad</h2>
                 <p style="color: gray;">Silakan masukkan User ID dan Password Anda</p>
             </div>
@@ -371,30 +371,32 @@ def clean_val(val):
     return val_str
 
 # ==========================================
-# KONTEN UTAMA APLIKASI
+# KONTEN UTAMA APLIKASI (DASHBOARD HOME)
 # ==========================================
 if menu == "🏠 Home / Beranda":
+    # Banner Utama Dashboard
     st.markdown(
         """
-        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 35px; border-radius: 12px; color: white; margin-bottom: 25px;">
-            <h1 style="margin: 0; font-size: 2.3rem;">👋 Selamat Datang di Sistem RENCANG</h1>
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 35px; border-radius: 12px; color: white; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <h1 style="margin: 0; font-size: 2.3rem;">📊 Dashboard Utama RENCANG</h1>
             <p style="font-size: 1.15rem; margin-top: 10px; opacity: 0.9;">
-                Platform Terintegrasi Perencanaan dan Keuangan Fakultas Kedokteran Universitas Padjadjaran.
+                Sistem Informasi Terintegrasi Perencanaan dan Keuangan Fakultas Kedokteran Universitas Padjadjaran.
             </p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    st.markdown("### 📌 **Informasi & Statistik Sistem**")
+    st.markdown("### 📈 **Statistik Ringkas Sistem**")
     
+    # Kartu Statistik Interaktif
     col_h1, col_h2, col_h3 = st.columns(3)
     with col_h1:
         st.markdown(
             f"""
-            <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
-                <h3 style="color: #1e3a8a; margin: 0; font-size: 1.8rem;">{len(st.session_state.df_dosen)}</h3>
-                <p style="color: #64748b; margin-top: 5px; font-weight: 600;">Total Data Dosen</p>
+            <div style="background-color: #ffffff; padding: 22px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a8a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.95rem; font-weight: 600;">👨‍⚕️ Total Data Dosen</p>
+                <h3 style="color: #1e3a8a; margin: 8px 0 0 0; font-size: 2rem;">{len(st.session_state.df_dosen)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -402,9 +404,9 @@ if menu == "🏠 Home / Beranda":
     with col_h2:
         st.markdown(
             f"""
-            <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
-                <h3 style="color: #0d9488; margin: 0; font-size: 1.8rem;">{len(st.session_state.df_staff)}</h3>
-                <p style="color: #64748b; margin-top: 5px; font-weight: 600;">Total Data Staff / Tendik</p>
+            <div style="background-color: #ffffff; padding: 22px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #0d9488; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.95rem; font-weight: 600;">👨‍💼 Total Data Staff / Tendik</p>
+                <h3 style="color: #0d9488; margin: 8px 0 0 0; font-size: 2rem;">{len(st.session_state.df_staff)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -412,13 +414,30 @@ if menu == "🏠 Home / Beranda":
     with col_h3:
         st.markdown(
             f"""
-            <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
-                <h3 style="color: #d97706; margin: 0; font-size: 1.8rem;">{len(st.session_state.df_verif_sptjb)}</h3>
-                <p style="color: #64748b; margin-top: 5px; font-weight: 600;">Total Data Verifikasi SPTJB</p>
+            <div style="background-color: #ffffff; padding: 22px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.95rem; font-weight: 600;">📄 Total Verifikasi SPTJB</p>
+                <h3 style="color: #d97706; margin: 8px 0 0 0; font-size: 2rem;">{len(st.session_state.df_verif_sptjb)}</h3>
             </div>
             """,
             unsafe_allow_html=True
         )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 🔍 **Grafik Rekapitulasi Data Civitas**")
+    
+    # Visualisasi Grafik Sederhana Berdasarkan Data yang Ada
+    col_g1, col_g2 = st.columns(2)
+    with col_g1:
+        st.markdown("**Distribusi Kategori Data Utama**")
+        chart_data = pd.DataFrame({
+            "Kategori": ["Dosen", "Staff / Tendik", "Verifikasi SPTJB"],
+            "Jumlah": [len(st.session_state.df_dosen), len(st.session_state.df_staff), len(st.session_state.df_verif_sptjb)]
+        })
+        st.bar_chart(chart_data.set_index("Kategori"))
+        
+    with col_g2:
+        st.markdown("**Informasi Akses & Sesi Pengguna**")
+        st.info(f"Anda sedang masuk sebagai: **{st.session_state.current_user}** dengan peran (**{st.session_state.current_role.upper()}**). Gunakan panel navigasi di sebelah kiri untuk mengelola data sesuai kebutuhan operasional Fakultas Kedokteran Unpad.")
 
 elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     st.markdown(
