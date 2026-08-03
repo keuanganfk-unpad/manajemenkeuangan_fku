@@ -420,47 +420,6 @@ if menu == "🏠 Home / Beranda":
             unsafe_allow_html=True
         )
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 🧭 **Panduan & Akses Cepat Fitur Utama (Bisa Di-klik)**")
-    
-    col_f1, col_f2 = st.columns(2)
-    
-    with col_f1:
-        with st.container(border=True):
-            st.markdown("#### 📋 Pengelolaan Data Dosen & Staff")
-            st.markdown(
-                "Gunakan fitur ini untuk melakukan pencarian data civitas, menambahkan data baru, "
-                "memperbarui informasi profil, menghapus data, hingga mengunduh laporan langsung "
-                "dalam format Excel secara mudah."
-            )
-            if st.button("🚀 Akses Pengelolaan Data", use_container_width=True):
-                if st.session_state.current_role == "verifikator":
-                    st.warning("⚠️ Akun Anda adalah Tim Verifikator. Akses menu pengelolaan data khusus untuk Staf/Admin.")
-                elif st.session_state.current_role in ["admin", "user"]:
-                    st.success("✅ Mengarahkan ke menu Lihat & Cari Data...")
-                    time.sleep(0.8)
-                    st.rerun()
-                else:
-                    st.error("❌ Akses ditolak: Hak Akses (Role) Anda tidak valid.")
-
-    with col_f2:
-        with st.container(border=True):
-            st.markdown("#### ✔️ Panel Verifikasi & Cek Dokumen")
-            st.markdown(
-                "Khusus untuk Tim Verifikator, menu ini menyajikan rekam jejak SPTJB lengkap "
-                "dengan akses tautan dokumen langsung, checklist verifikasi, serta fitur rincian data "
-                "interaktif untuk transparansi keuangan."
-            )
-            if st.button("🚀 Akses Panel Verifikasi", use_container_width=True):
-                if st.session_state.current_role == "verifikator" or st.session_state.current_role == "admin":
-                    st.success("✅ Mengarahkan ke Panel Verifikator...")
-                    time.sleep(0.8)
-                    st.rerun()
-                elif st.session_state.current_role == "user":
-                    st.warning("⚠️ Akses Terbatas: Akun Staf/User umum tidak memiliki hak akses khusus ke Panel Verifikator.")
-                else:
-                    st.error("❌ Akses ditolak: Pengguna tidak dikenali.")
-
 elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
     st.markdown(
         f"""
