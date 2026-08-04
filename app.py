@@ -92,7 +92,7 @@ if not st.session_state.logged_in:
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
 URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 URL_ASLI_KLINIK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrAOfYGQUPB9ntgIfSOjPv4dGAea5ZCCsJXqSqwITRLWJ1NNvk9LvUcX58gOKTXA/pub?gid=772898747&single=true&output=csv"
-URL_ASLI_TOR_MHS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrAM-wUQzQPuYlrO0IRhrCy8JsE-ijQ16XE2ZMnlKGjuOdQ2rlK9hNgtf1dYp8Li9CjXJq7WGfI49I/pub?gid=291854399&single=true&output=csv"
+URL_ASLI_TOR_MHS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrAM-wUQzQPuYlrO0IRhrCy8JsE-ijQ16XE2ZMnlKGjuOdQ2rlK9hNgtf1dYp8Li9CjXJq7WGfI49I/pub?gid=291854399&single=true&output=csvv"
 
 def convert_sheets_url(url):
     if not url or "MASUKKAN_" in url:
@@ -209,7 +209,7 @@ def load_data_dosen():
             df = pd.read_csv("Backup_Data_Dosen.csv", dtype=str)
             if len(df) > 0:
                 df.columns = make_unique_columns(df.columns)
-                return df.fillna("")
+                return df.astype(str).fillna("")
         except:
             pass
     try:
@@ -219,7 +219,7 @@ def load_data_dosen():
             if col in df.columns:
                 df[col] = df[col].astype(str).str.replace(r'\.0$', '', regex=True).replace('nan', '')
         df.columns = make_unique_columns(df.columns)
-        return df.fillna("")
+        return df.astype(str).fillna("")
     except:
         return pd.DataFrame()
 
@@ -229,7 +229,7 @@ def load_data_staff():
             df = pd.read_csv("Backup_Data_Staff.csv", dtype=str)
             if len(df) > 0:
                 df.columns = make_unique_columns(df.columns)
-                return df.fillna("")
+                return df.astype(str).fillna("")
         except:
             pass
     try:
@@ -249,7 +249,7 @@ def load_data_staff():
         df_staff["HP"] = df_tendik.get("HP", "")
         df_staff["Email"] = df_tendik.get("Email", "")
         df_staff.columns = make_unique_columns(df_staff.columns)
-        return df_staff.fillna("")
+        return df_staff.astype(str).fillna("")
     except:
         return pd.DataFrame()
 
@@ -259,7 +259,7 @@ def load_data_klinik():
             df = pd.read_csv("Backup_Data_Klinik.csv", dtype=str)
             if len(df) > 0: 
                 df.columns = make_unique_columns(df.columns)
-                return df.fillna("")
+                return df.astype(str).fillna("")
         except:
             pass
     if not URL_KLINIK:
@@ -274,7 +274,7 @@ def load_data_klinik():
         if "No." not in df.columns:
             df.insert(0, "No.", range(1, len(df) + 1))
         df.columns = make_unique_columns(df.columns)
-        return df.fillna("")
+        return df.astype(str).fillna("")
     except Exception as e:
         st.error(f"Gagal memuat Google Sheets Data Klinik: {e}")
         return pd.DataFrame()
@@ -285,7 +285,7 @@ def load_data_tor_mhs():
             df = pd.read_csv("Backup_Data_TOR_Mhs.csv", dtype=str)
             if len(df) > 0: 
                 df.columns = make_unique_columns(df.columns)
-                return df.fillna("")
+                return df.astype(str).fillna("")
         except:
             pass
     if not URL_TOR_MHS:
@@ -307,7 +307,7 @@ def load_data_tor_mhs():
             
         df.columns = make_unique_columns(headers)
         df = df.dropna(how='all').reset_index(drop=True)
-        return df.fillna("")
+        return df.astype(str).fillna("")
     except Exception as e:
         st.error(f"Gagal memuat Google Sheets TOR Mahasiswa: {e}")
         return pd.DataFrame()
@@ -344,7 +344,7 @@ def load_data_sptjb():
                 df[col] = df[col].astype(str).str.replace(r'\.0$', '', regex=True).replace('nan', '')
 
         df = df.dropna(how='all')
-        return df.fillna("")
+        return df.astype(str).fillna("")
     except Exception as e:
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
@@ -383,7 +383,7 @@ def load_data_verifikator():
             df["Checklist"] = False
 
         df.columns = make_unique_columns(df.columns)
-        return df.fillna("")
+        return df.astype(str).fillna("")
     except Exception as e:
         st.error(f"Gagal memuat data Verifikator Bu Wadek: {e}")
         return pd.DataFrame()
