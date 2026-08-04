@@ -260,6 +260,10 @@ def load_data_tor_mhs():
             df = pd.read_csv("Backup_Data_TOR_Mhs.csv", dtype=str)
             if len(df) > 0: 
                 df.columns = df.columns.str.strip()
+                cols = pd.Series(df.columns)
+                for dup in cols[cols.duplicated()].unique(): 
+                    cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
+                df.columns = cols
                 return df.fillna("")
         except:
             pass
@@ -267,8 +271,14 @@ def load_data_tor_mhs():
         return pd.DataFrame()
     try:
         df_raw = pd.read_csv(URL_TOR_MHS, header=None, dtype=str)
-        df = df_raw.iloc[8:].copy() # Memulai baris header dari row index 8 (Row 9 di Google Sheets)
-        df.columns = df_raw.iloc[7].str.strip() # Mengambil nama kolom dari row index 7 (Row 8 di GSheets) jika diperlukan, atau langsung atur header row 9
+        df = df_raw.iloc[8:].copy()
+        df.columns = df_raw.iloc[7].str.strip()
+        
+        cols = pd.Series(df.columns)
+        for dup in cols[cols.duplicated()].unique(): 
+            cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
+        df.columns = cols
+        
         df = df.dropna(how='all').reset_index(drop=True)
         return df.fillna("")
     except Exception as e:
@@ -562,14 +572,14 @@ elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         st.markdown("---")
         st.markdown("### 🔍 **Pilih Baris Data untuk Melihat Detail Lengkap**")
         
-        row_options = [f"Baris No. {row['No.']} — ({row.iloc[1] if len(row) > 1 else 'Data'})" for _, row in df_verif.iterrows()]
+        row_options = [f"Baris No. {row.iloc[0]} — ({row.iloc[1] if len(row) > 1 else 'Data'})" for _, row in df_verif.iterrows()]
         selected_option = st.selectbox("Pilih baris yang ingin diperiksa rinciannya:", row_options)
         
         if selected_option:
             selected_idx = row_options.index(selected_option)
             selected_data = df_verif.iloc[selected_idx]
             
-            st.markdown(f"**📌 Rincian Lengkap Baris #{selected_data['No.']} :**")
+            st.markdown(f"**📌 Rincian Lengkap Baris:**")
             
             detail_items = []
             for col_name, val in selected_data.items():
