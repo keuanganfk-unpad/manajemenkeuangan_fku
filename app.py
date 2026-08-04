@@ -92,7 +92,7 @@ if not st.session_state.logged_in:
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
 URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 URL_ASLI_KLINIK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrAOfYGQUPB9ntgIfSOjPv4dGAea5ZCCsJXqSqwITRLWJ1NNvk9LvUcX58gOKTXA/pub?gid=772898747&single=true&output=csv"
-URL_ASLI_TOR_MHS = "https://docs.google.com/spreadsheets/d/e/MASUKKAN_LINK_PUBLIK_GIDS_TOR_MHS_DI_SINI/pub?output=csv"
+URL_ASLI_TOR_MHS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrAM-wUQzQPuYlrO0IRhrCy8JsE-ijQ16XE2ZMnlKGjuOdQ2rlK9hNgtf1dYp8Li9CjXJq7WGfI49I/pub?gid=291854399&single=true&output=csv"
 
 def convert_sheets_url(url):
     if not url or "MASUKKAN_" in url:
@@ -731,11 +731,9 @@ elif menu == "✏️ Edit Data":
     if len(df_aktif) == 0:
         st.info(f"Belum ada data {kategori_nama} untuk diedit.")
     else:
-        # Menentukan kolom referensi pilihan berdasarkan indeks kolom aktual agar aman dari beda nama header
-        if kategori_nama == "Klinik":
-            identitas_kolom = df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0]
-        elif kategori_nama == "TOR Mahasiswa":
-            identitas_kolom = df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0]
+        # Mencari kolom identitas berdasarkan kata 'nama' agar pilihan dropdown akurat
+        if kategori_nama in ["Klinik", "TOR Mahasiswa"]:
+            identitas_kolom = next((col for col in df_aktif.columns if "nama" in col.lower()), df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0])
         else:
             identitas_kolom = "NAMA" if "NAMA" in df_aktif.columns else df_aktif.columns[1]
 
@@ -775,7 +773,6 @@ elif menu == "✏️ Edit Data":
                         hp = st.text_input("Nomor HP", value=clean_val(old_data.get("HP")))
                         email = st.text_input("Email", value=clean_val(old_data.get("Email")))
                 elif kategori_nama == "Klinik":
-                    # Mengambil nilai berdasarkan urutan kolom aktif agar aman dari perbedaan nama header
                     c_list = list(df_aktif.columns)
                     val_nm = clean_val(old_data[c_list[1]]) if len(c_list) > 1 else ""
                     val_kd = clean_val(old_data[c_list[2]]) if len(c_list) > 2 else ""
@@ -858,10 +855,8 @@ elif menu == "🗑️ Hapus Data":
     if len(df_aktif) == 0:
         st.info(f"Tidak ada data {kategori_nama} untuk dihapus.")
     else:
-        if kategori_nama == "Klinik":
-            identitas_kolom = df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0]
-        elif kategori_nama == "TOR Mahasiswa":
-            identitas_kolom = df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0]
+        if kategori_nama in ["Klinik", "TOR Mahasiswa"]:
+            identitas_kolom = next((col for col in df_aktif.columns if "nama" in col.lower()), df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0])
         else:
             identitas_kolom = "NAMA" if "NAMA" in df_aktif.columns else df_aktif.columns[1]
 
