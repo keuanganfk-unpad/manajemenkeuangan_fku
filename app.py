@@ -113,7 +113,7 @@ URL_KLINIK = convert_sheets_url(URL_ASLI_KLINIK)
 URL_TOR_MHS = convert_sheets_url(URL_ASLI_TOR_MHS)
 
 # ==========================================
-# FUNGSI PEMBERSIH NAMA KOLOM DUPLIKAT (ANTI ERROR STREAMLIT)
+# FUNGSI PEMBERSIH NAMA KOLOM DUPLIKAT
 # ==========================================
 def make_unique_columns(cols):
     seen = {}
@@ -292,14 +292,12 @@ def load_data_tor_mhs():
         return pd.DataFrame()
     try:
         df_raw = pd.read_csv(URL_TOR_MHS, header=None, dtype=str)
-        # Kolom E, G, J, K, N, S, T, CG, CH, CI, CJ, CN
-        target_indices = [4, 6, 9, 10, 13, 18, 19, 84, 85, 86, 87, 91]
+        target_indices = [4, 6, 9, 10, 13, 18, 19, 84, 85, 86, 87, 91] # E, G, J, K, N, S, T, CG, CH, CI, CJ, CN
         valid_indices = [i for i in target_indices if i < len(df_raw.columns)]
         
         if not valid_indices:
             return pd.DataFrame()
             
-        # Mengambil baris data mulai dari index 8 (Baris ke-9 di Google Sheets)
         df = df_raw.iloc[8:, valid_indices].copy()
         
         headers = []
@@ -375,7 +373,7 @@ def load_data_verifikator():
 
         target_col_idx = -1
         for idx, col_name in enumerate(df.columns):
-            if any(k in col_name.lower() for k in ["siat", "perencanaan", "proses", "link", "url"]):
+            if any(k in str(col_name).lower() for k in ["siat", "perencanaan", "proses", "link", "url"]):
                 target_col_idx = idx
                 break
         
@@ -568,13 +566,13 @@ elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
 
     column_config_dict = {}
     for col in df_verif.columns:
-        if any(k in col.lower() for k in ["link", "dokumen", "url", "file", "upload"]):
+        if any(k in str(col).lower() for k in ["link", "dokumen", "url", "file", "upload"]):
             column_config_dict[col] = st.column_config.LinkColumn(
-                col,
+                str(col),
                 help="Klik untuk membuka tautan dokumen upload",
                 display_text="🔗 Buka Dokumen"
             )
-        elif col == "Checklist":
+        elif str(col).lower() == "checklist":
             column_config_dict[col] = st.column_config.CheckboxColumn(
                 "Checklist",
                 help="Centang untuk menandai verifikasi",
@@ -632,9 +630,9 @@ elif menu == "📋 Lihat & Cari Data":
         
         column_config_dict = {}
         for col in filtered_df.columns:
-            if any(k in col.lower() for k in ["link", "dokumen", "url", "file"]):
+            if any(k in str(col).lower() for k in ["link", "dokumen", "url", "file"]):
                 column_config_dict[col] = st.column_config.LinkColumn(
-                    col,
+                    str(col),
                     help="Klik untuk membuka tautan dokumen",
                     display_text="🔗 Buka Dokumen"
                 )
@@ -757,21 +755,20 @@ elif menu == "✏️ Edit Data":
                     val_5 = clean_val(old_data[c_list[5]]) if len(c_list) > 5 else ""
 
                     with col1:
-                        f0 = st.text_input(c_list[0], value=val_0)
-                        f1 = st.text_input(c_list[1], value=val_1)
-                        f2 = st.text_input(c_list[2], value=val_2)
+                        f0 = st.text_input(str(c_list[0]), value=val_0)
+                        f1 = st.text_input(str(c_list[1]), value=val_1)
+                        f2 = st.text_input(str(c_list[2]), value=val_2)
                     with col2:
-                        f3 = st.text_input(c_list[3], value=val_3)
-                        f4 = st.text_input(c_list[4], value=val_4)
-                        f5 = st.text_input(c_list[5], value=val_5)
+                        f3 = st.text_input(str(c_list[3]), value=val_3)
+                        f4 = st.text_input(str(c_list[4]), value=val_4)
+                        f5 = st.text_input(str(c_list[5]), value=val_5)
                 else:
-                    # Form standar untuk kategori lain
                     with col1:
-                        f0 = st.text_input(c_list[0], value=clean_val(old_data[c_list[0]]))
-                        f1 = st.text_input(c_list[1], value=clean_val(old_data[c_list[1]]) if len(c_list) > 1 else "")
+                        f0 = st.text_input(str(c_list[0]), value=clean_val(old_data[c_list[0]]))
+                        f1 = st.text_input(str(c_list[1]), value=clean_val(old_data[c_list[1]]) if len(c_list) > 1 else "")
                     with col2:
-                        f2 = st.text_input(c_list[2], value=clean_val(old_data[c_list[2]]) if len(c_list) > 2 else "")
-                        f3 = st.text_input(c_list[3], value=clean_val(old_data[c_list[3]]) if len(c_list) > 3 else "")
+                        f2 = st.text_input(str(c_list[2]), value=clean_val(old_data[c_list[2]]) if len(c_list) > 2 else "")
+                        f3 = st.text_input(str(c_list[3]), value=clean_val(old_data[c_list[3]]) if len(c_list) > 3 else "")
 
                 submit_edit = st.form_submit_button("🔄 Perbarui Data", use_container_width=True)
                 if submit_edit:
