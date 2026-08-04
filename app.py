@@ -41,7 +41,6 @@ if "current_user" not in st.session_state:
 if "current_role" not in st.session_state:
     st.session_state.current_role = ""
 
-# Membaca query params URL untuk mempertahankan sesi saat refresh browser
 query_params = st.query_params
 if "user" in query_params and not st.session_state.logged_in:
     u_id = query_params["user"]
@@ -229,17 +228,20 @@ def load_data_staff():
         return pd.DataFrame(columns=["No.", "NIP", "NAMA", "JABATAN", "UNIT KERJA", "STATUS PEGAWAI", "JENIS KELAMIN", "HP", "Email"])
 
 def load_data_klinik():
+    if os.path.exists("Backup_Data_Klinik.csv"):
+        try:
+            df = pd.read_csv("Backup_Data_Klinik.csv", dtype=str)
+            if len(df) > 0: return df.fillna("")
+        except:
+            pass
     if not URL_KLINIK:
         return pd.DataFrame(columns=["No.", "Nama Klinik", "Kode Klinik", "Penanggung Jawab", "Lokasi / Alamat", "Nomor Telepon", "Keterangan"])
     try:
         df = pd.read_csv(URL_KLINIK, dtype=str)
         df.columns = df.columns.str.strip()
-        
-        # Menghilangkan kolom A, B, C, D jika ada di Google Sheets (berdasarkan indeks 0, 1, 2, 3)
         if len(df.columns) > 4:
             df = df.iloc[:, 4:]
             df.columns = df.columns.str.strip()
-            
         df = df.dropna(how='all').reset_index(drop=True)
         if "No." not in df.columns:
             df.insert(0, "No.", range(1, len(df) + 1))
@@ -334,6 +336,7 @@ def load_data_verifikator():
 def simpan_backup():
     st.session_state.df_dosen.to_csv("Backup_Data_Dosen.csv", index=False)
     st.session_state.df_staff.to_csv("Backup_Data_Staff.csv", index=False)
+    st.session_state.df_klinik.to_csv("Backup_Data_Klinik.csv", index=False)
 
 if "df_dosen" not in st.session_state:
     st.session_state.df_dosen = load_data_dosen()
@@ -380,7 +383,7 @@ else:
     )
     st.sidebar.markdown("---")
 
-    if kategori_data in ["📄 Nomor SPTJB", "🏥 Data Klinik"]:
+    if kategori_data == "📄 Nomor SPTJB":
         menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["🏠 Home / Beranda", "📋 Lihat & Cari Data"])
     else:
         menu = st.sidebar.selectbox(
@@ -545,8 +548,8 @@ elif menu == "📋 Lihat & Cari Data":
         unsafe_allow_html=True
     )
 
-    if kategori_nama in ["SPTJB", "Klinik"]:
-        keyword = st.text_input(f"Cari {kategori_nama} (berdasarkan kata kunci):", placeholder="Ketik di sini...")
+    if kategori_nama == "SPTJB":
+        keyword = st.text_input("Cari SPTJB (berdasarkan kata kunci):", placeholder="Ketik di sini...")
         filtered_df = df_aktif.copy()
         if keyword and len(filtered_df.columns) > 0:
             mask = filtered_df.apply(lambda row: row.astype(str).str.contains(keyword, case=False, na=False).any(), axis=1)
@@ -570,6 +573,16 @@ elif menu == "📋 Lihat & Cari Data":
             hide_index=True,
             column_config=column_config_dict
         )
+    elif kategori_nama == "Klinik":
+        keyword = st.text_input("Cari Klinik (berdasarkan Nama Klinik atau Penanggung Jawab):", placeholder="Ketik di sini...")
+        filtered_df = df_aktif.copy()
+        if keyword:
+            filtered_df = filtered_df[
+                filtered_df["Nama Klinik"].astype(str).str.contains(keyword, case=False, na=False) |
+                filtered_df["Penanggung Jawab"].astype(str).str.contains(keyword, case=False, na=False)
+            ]
+        st.markdown(f"**Menampilkan {len(filtered_df)} data:**")
+        st.dataframe(filtered_df, use_container_width=True, height=500, hide_index=True)
     else:
         keyword = st.text_input(f"Cari {kategori_nama} (berdasarkan Nama atau NIP):", placeholder="Ketik di sini...")
         filtered_df = df_aktif.copy()
@@ -613,10 +626,21 @@ elif menu == "➕ Tambah Data Baru":
                 jenis_kelamin = st.selectbox("Jenis Kelamin", ["Laki-Laki", "Perempuan"])
                 hp = st.text_input("Nomor HP")
                 email = st.text_input("Email")
+        elif kategori_nama == "Klinik":
+            with col1:
+                nama_klinik = st.text_input("Nama Klinik*")
+                kode_klinik = st.text_input("Kode Klinik")
+                penanggung_jawab = st.text_input("Penanggung Jawab")
+            with col2:
+                lokasi = st.text_area("Lokasi / Alamat Klinik")
+                telepon = st.text_input("Nomor Telepon")
+                keterangan = st.text_input("Keterangan Tambahan")
                 
         submit_button = st.form_submit_button(f"💾 Simpan Data {kategori_nama}", use_container_width=True)
         if submit_button:
-            if not nama:
+            if kategori_nama == "Klinik" and not nama_klinik:
+                st.warning("⚠️ Nama Klinik wajib diisi!")
+            elif kategori_nama in ["Dosen", "Staff"] and not locals().get("nama", ""):
                 st.warning("⚠️ Nama Lengkap wajib diisi!")
             else:
                 if kategori_nama == "Dosen":
@@ -627,8 +651,12 @@ elif menu == "➕ Tambah Data Baru":
                     new_data = {"No.": len(df_aktif)+1, "NIP": str(nip), "NAMA": nama, "JABATAN": jabatan, "UNIT KERJA": unit_kerja, "STATUS PEGAWAI": status_pegawai, "JENIS KELAMIN": jenis_kelamin, "HP": str(hp), "Email": email}
                     st.session_state.df_staff = pd.concat([st.session_state.df_staff, pd.DataFrame([new_data])], ignore_index=True)
                     simpan_backup()
+                elif kategori_nama == "Klinik":
+                    new_data = {"No.": len(df_aktif)+1, "Nama Klinik": nama_klinik, "Kode Klinik": kode_klinik, "Penanggung Jawab": penanggung_jawab, "Lokasi / Alamat": lokasi, "Nomor Telepon": telepon, "Keterangan": keterangan}
+                    st.session_state.df_klinik = pd.concat([st.session_state.df_klinik, pd.DataFrame([new_data])], ignore_index=True)
+                    simpan_backup()
                 
-                st.success(f"🎉 Data {kategori_nama} **{nama}** berhasil ditambahkan!")
+                st.success(f"🎉 Data {kategori_nama} berhasil ditambahkan!")
                 time.sleep(1.5)
                 st.rerun()
 
@@ -637,10 +665,11 @@ elif menu == "✏️ Edit Data":
     if len(df_aktif) == 0:
         st.info(f"Belum ada data {kategori_nama} untuk diedit.")
     else:
-        pilihan = df_aktif["NAMA"].dropna().tolist()
-        to_edit = st.selectbox(f"Pilih Nama {kategori_nama} yang ingin diedit:", pilihan)
-        old_data = df_aktif[df_aktif["NAMA"] == to_edit].iloc[0]
-        idx = df_aktif[df_aktif["NAMA"] == to_edit].index[0]
+        identitas_kolom = "Nama Klinik" if kategori_nama == "Klinik" else "NAMA"
+        pilihan = df_aktif[identitas_kolom].dropna().tolist()
+        to_edit = st.selectbox(f"Pilih {kategori_nama} yang ingin diedit:", pilihan)
+        old_data = df_aktif[df_aktif[identitas_kolom] == to_edit].iloc[0]
+        idx = df_aktif[df_aktif[identitas_kolom] == to_edit].index[0]
         
         with st.form("form_edit"):
             col1, col2 = st.columns(2)
@@ -669,10 +698,21 @@ elif menu == "✏️ Edit Data":
                     jenis_kelamin = st.selectbox("Jenis Kelamin", jk_opts, index=idx_jk)
                     hp = st.text_input("Nomor HP", value=clean_val(old_data.get("HP")))
                     email = st.text_input("Email", value=clean_val(old_data.get("Email")))
+            elif kategori_nama == "Klinik":
+                with col1:
+                    nama_klinik = st.text_input("Nama Klinik*", value=clean_val(old_data.get("Nama Klinik")))
+                    kode_klinik = st.text_input("Kode Klinik", value=clean_val(old_data.get("Kode Klinik")))
+                    penanggung_jawab = st.text_input("Penanggung Jawab", value=clean_val(old_data.get("Penanggung Jawab")))
+                with col2:
+                    lokasi = st.text_area("Lokasi / Alamat Klinik", value=clean_val(old_data.get("Lokasi / Alamat")))
+                    telepon = st.text_input("Nomor Telepon", value=clean_val(old_data.get("Nomor Telepon")))
+                    keterangan = st.text_input("Keterangan Tambahan", value=clean_val(old_data.get("Keterangan")))
 
             submit_edit = st.form_submit_button("🔄 Perbarui Data", use_container_width=True)
             if submit_edit:
-                if not nama:
+                if kategori_nama == "Klinik" and not nama_klinik:
+                    st.warning("⚠️ Nama Klinik wajib diisi!")
+                elif kategori_nama in ["Dosen", "Staff"] and not locals().get("nama", ""):
                     st.warning("⚠️ Nama Lengkap wajib diisi!")
                 else:
                     if kategori_nama == "Dosen":
@@ -684,8 +724,16 @@ elif menu == "✏️ Edit Data":
                         st.session_state.df_staff.at[idx, "JABATAN"], st.session_state.df_staff.at[idx, "UNIT KERJA"] = jabatan, unit_kerja
                         st.session_state.df_staff.at[idx, "STATUS PEGAWAI"], st.session_state.df_staff.at[idx, "JENIS KELAMIN"], st.session_state.df_staff.at[idx, "HP"], st.session_state.df_staff.at[idx, "Email"] = status_pegawai, jenis_kelamin, str(hp), email
                         simpan_backup()
+                    elif kategori_nama == "Klinik":
+                        st.session_state.df_klinik.at[idx, "Nama Klinik"] = nama_klinik
+                        st.session_state.df_klinik.at[idx, "Kode Klinik"] = kode_klinik
+                        st.session_state.df_klinik.at[idx, "Penanggung Jawab"] = penanggung_jawab
+                        st.session_state.df_klinik.at[idx, "Lokasi / Alamat"] = lokasi
+                        st.session_state.df_klinik.at[idx, "Nomor Telepon"] = telepon
+                        st.session_state.df_klinik.at[idx, "Keterangan"] = keterangan
+                        simpan_backup()
                     
-                    st.success(f"✅ Data {kategori_nama} **{nama}** berhasil diperbarui!")
+                    st.success(f"✅ Data {kategori_nama} berhasil diperbarui!")
                     time.sleep(1.5)
                     st.rerun()
 
@@ -694,8 +742,9 @@ elif menu == "🗑️ Hapus Data":
     if len(df_aktif) == 0:
         st.info(f"Tidak ada data {kategori_nama} untuk dihapus.")
     else:
-        pilihan = df_aktif["NAMA"].dropna().tolist()
-        to_delete = st.selectbox(f"Pilih Nama {kategori_nama} yang ingin dihapus:", pilihan)
+        identitas_kolom = "Nama Klinik" if kategori_nama == "Klinik" else "NAMA"
+        pilihan = df_aktif[identitas_kolom].dropna().tolist()
+        to_delete = st.selectbox(f"Pilih {kategori_nama} yang ingin dihapus:", pilihan)
 
         if st.button("🗑️ Hapus Data", type="primary"):
             if kategori_nama == "Dosen":
@@ -703,6 +752,9 @@ elif menu == "🗑️ Hapus Data":
                 simpan_backup()
             elif kategori_nama == "Staff":
                 st.session_state.df_staff = st.session_state.df_staff[st.session_state.df_staff["NAMA"] != to_delete].reset_index(drop=True)
+                simpan_backup()
+            elif kategori_nama == "Klinik":
+                st.session_state.df_klinik = st.session_state.df_klinik[st.session_state.df_klinik["Nama Klinik"] != to_delete].reset_index(drop=True)
                 simpan_backup()
             
             st.success(f"✅ Data {kategori_nama} **{to_delete}** berhasil dihapus!")
