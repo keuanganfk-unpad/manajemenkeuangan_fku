@@ -271,8 +271,19 @@ def load_data_tor_mhs():
         return pd.DataFrame()
     try:
         df_raw = pd.read_csv(URL_TOR_MHS, header=None, dtype=str)
-        df = df_raw.iloc[8:].copy()
-        df.columns = df_raw.iloc[7].str.strip()
+        target_indices = [4, 6, 9, 10, 13, 18, 19, 84, 85, 86, 87, 91] # E, G, J, K, N, S, T, CG, CH, CI, CJ, CN
+        valid_indices = [i for i in target_indices if i < len(df_raw.columns)]
+        
+        if not valid_indices:
+            return pd.DataFrame()
+            
+        df = df_raw.iloc[8:, valid_indices].copy()
+        
+        headers = []
+        for i in valid_indices:
+            h_val = str(df_raw.iloc[8, i]).strip() if pd.notna(df_raw.iloc[8, i]) else f"Kolom_{i}"
+            headers.append(h_val)
+        df.columns = headers
         
         cols = pd.Series(df.columns)
         for dup in cols[cols.duplicated()].unique(): 
@@ -796,12 +807,12 @@ elif menu == "✏️ Edit Data":
                         keterangan = st.text_input("Keterangan Tambahan", value=val_ket)
                 elif kategori_nama == "TOR Mahasiswa":
                     c_list = list(df_aktif.columns)
-                    val_nm_mhs = clean_val(old_data[c_list[1]]) if len(c_list) > 1 else ""
-                    val_npm_mhs = clean_val(old_data[c_list[2]]) if len(c_list) > 2 else ""
-                    val_jdl_tor = clean_val(old_data[c_list[3]]) if len(c_list) > 3 else ""
-                    val_dept_mhs = clean_val(old_data[c_list[4]]) if len(c_list) > 4 else ""
-                    val_nom_tor = clean_val(old_data[c_list[5]]) if len(c_list) > 5 else ""
-                    val_stat_tor = clean_val(old_data[c_list[6]]) if len(c_list) > 6 else "Diajukan"
+                    val_nm_mhs = clean_val(old_data[c_list[0]]) if len(c_list) > 0 else ""
+                    val_npm_mhs = clean_val(old_data[c_list[1]]) if len(c_list) > 1 else ""
+                    val_jdl_tor = clean_val(old_data[c_list[2]]) if len(c_list) > 2 else ""
+                    val_dept_mhs = clean_val(old_data[c_list[3]]) if len(c_list) > 3 else ""
+                    val_nom_tor = clean_val(old_data[c_list[4]]) if len(c_list) > 4 else ""
+                    val_stat_tor = clean_val(old_data[c_list[5]]) if len(c_list) > 5 else "Diajukan"
 
                     with col1:
                         nama_mhs = st.text_input("Nama Mahasiswa*", value=val_nm_mhs)
@@ -843,12 +854,12 @@ elif menu == "✏️ Edit Data":
                             simpan_backup()
                         elif kategori_nama == "TOR Mahasiswa":
                             c_list = list(df_aktif.columns)
-                            if len(c_list) > 1: st.session_state.df_tor_mhs.at[idx, c_list[1]] = nama_mhs
-                            if len(c_list) > 2: st.session_state.df_tor_mhs.at[idx, c_list[2]] = npm_mhs
-                            if len(c_list) > 3: st.session_state.df_tor_mhs.at[idx, c_list[3]] = judul_tor
-                            if len(c_list) > 4: st.session_state.df_tor_mhs.at[idx, c_list[4]] = departemen_mhs
-                            if len(c_list) > 5: st.session_state.df_tor_mhs.at[idx, c_list[5]] = nominal_tor
-                            if len(c_list) > 6: st.session_state.df_tor_mhs.at[idx, c_list[6]] = status_tor
+                            if len(c_list) > 0: st.session_state.df_tor_mhs.at[idx, c_list[0]] = nama_mhs
+                            if len(c_list) > 1: st.session_state.df_tor_mhs.at[idx, c_list[1]] = npm_mhs
+                            if len(c_list) > 2: st.session_state.df_tor_mhs.at[idx, c_list[2]] = judul_tor
+                            if len(c_list) > 3: st.session_state.df_tor_mhs.at[idx, c_list[3]] = departemen_mhs
+                            if len(c_list) > 4: st.session_state.df_tor_mhs.at[idx, c_list[4]] = nominal_tor
+                            if len(c_list) > 5: st.session_state.df_tor_mhs.at[idx, c_list[5]] = status_tor
                             simpan_backup()
                         
                         st.success(f"✅ Data {kategori_nama} berhasil diperbarui!")
