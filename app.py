@@ -31,12 +31,24 @@ DATABASE_USER = {
     "verifikator": {"password": "verif2026", "nama": "Tim Verifikator SPTJB", "role": "verifikator"}
 }
 
+# ==========================================
+# INISIALISASI SESSION STATE & URL QUERY (ANTI LOGOUT SAAT REFRESH)
+# ==========================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "current_user" not in st.session_state:
     st.session_state.current_user = ""
 if "current_role" not in st.session_state:
     st.session_state.current_role = ""
+
+# Membaca query params URL untuk mempertahankan sesi saat refresh browser
+query_params = st.query_params
+if "user" in query_params and not st.session_state.logged_in:
+    u_id = query_params["user"]
+    if u_id in DATABASE_USER:
+        st.session_state.logged_in = True
+        st.session_state.current_user = DATABASE_USER[u_id]["nama"]
+        st.session_state.current_role = DATABASE_USER[u_id]["role"]
 
 # ==========================================
 # HALAMAN LOGIN (USER ID & PASSWORD)
@@ -66,6 +78,8 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.current_user = DATABASE_USER[input_user_id]["nama"]
                     st.session_state.current_role = DATABASE_USER[input_user_id]["role"]
+                    # Menyimpan user ke query params agar tahan saat refresh browser
+                    st.query_params["user"] = input_user_id
                     st.success(f"Login berhasil! Selamat datang, {DATABASE_USER[input_user_id]['nama']}")
                     time.sleep(1)
                     st.rerun()
@@ -79,7 +93,6 @@ if not st.session_state.logged_in:
 # ==========================================
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
 URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
-# Ubah URL di bawah ini dengan Link Publik Google Sheets Data Klinik Anda (format csv)
 URL_ASLI_KLINIK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrAOfYGQUPB9ntgIfSOjPv4dGAea5ZCCsJXqSqwITRLWJ1NNvk9LvUcX58gOKTXA/pub?gid=772898747&single=true&output=csv"
 
 def convert_sheets_url(url):
@@ -336,6 +349,8 @@ if st.sidebar.button("🚪 Logout", use_container_width=True):
     st.session_state.logged_in = False
     st.session_state.current_user = ""
     st.session_state.current_role = ""
+    # Menghapus query params saat logout
+    st.query_params.clear()
     st.rerun()
 
 st.sidebar.markdown("---")
