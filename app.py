@@ -140,7 +140,7 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (ELEGAN & MODERN SIDEBAR STYLING)
+# CSS KHUSUS (STICKY HEADER & MODERN STYLE)
 # ==========================================
 st.markdown(
     f"""
@@ -184,7 +184,6 @@ st.markdown(
         border-bottom: 1px solid #e5e7eb;
         margin-bottom: 15px;
     }}
-    /* Styling Card Menu Kategori Elegan di Sidebar */
     .sidebar-category-header {{
         background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         border: 1px solid #cbd5e1;
@@ -196,6 +195,22 @@ st.markdown(
         font-size: 0.95rem;
         letter-spacing: 0.3px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }}
+    /* CSS agar Header Tabel (st.table / th) tetap statis / sticky saat di-scroll */
+    .stTable div {{
+        max-height: 550px;
+        overflow-y: auto;
+    }}
+    .stTable table {{
+        position: relative;
+    }}
+    .stTable th {{
+        position: sticky !important;
+        top: 0 !important;
+        background-color: #f1f5f9 !important;
+        color: #1e3a8a !important;
+        z-index: 999 !important;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
     }}
     </style>
     <div class="header-container">
@@ -365,7 +380,7 @@ if "df_verif_sptjb" not in st.session_state:
     st.session_state.df_verif_sptjb = load_data_verifikator()
 
 # ==========================================
-# SIDEBAR & NAVIGASI (DENGAN TAMPILAN ELEGAN)
+# SIDEBAR & NAVIGASI
 # ==========================================
 st.sidebar.markdown(
     f"""
