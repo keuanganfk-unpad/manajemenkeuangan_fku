@@ -40,6 +40,8 @@ if "current_user" not in st.session_state:
     st.session_state.current_user = ""
 if "current_role" not in st.session_state:
     st.session_state.current_role = ""
+if "df_emailblast" not in st.session_state:
+    st.session_state.df_emailblast = pd.DataFrame()
 
 query_params = st.query_params
 if "user" in query_params and not st.session_state.logged_in:
@@ -381,12 +383,14 @@ if st.session_state.current_role == "verifikator":
 else:
     kategori_data = st.sidebar.radio(
         "👥 Pilih Kategori Data:",
-        ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "🏥 Data Klinik", "📄 Nomor SPTJB"]
+        ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "🏥 Data Klinik", "📧 Email Blast", "📄 Nomor SPTJB"]
     )
     st.sidebar.markdown("---")
 
-    if kategori_data == "📄 Nomor SPTJB":
+    if kategori_data in ["📄 Nomor SPTJB", "🏥 Data Klinik"]:
         menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["🏠 Home / Beranda", "📋 Lihat & Cari Data"])
+    elif kategori_data == "📧 Email Blast":
+        menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["🏠 Home / Beranda", "📤 Upload & Kirim Email Blast"])
     else:
         menu = st.sidebar.selectbox(
             "Pilih Menu Navigasi",
@@ -405,6 +409,9 @@ else:
     elif kategori_data == "🏥 Data Klinik":
         df_aktif = st.session_state.df_klinik
         kategori_nama = "Klinik"
+    elif kategori_data == "📧 Email Blast":
+        df_aktif = st.session_state.df_emailblast
+        kategori_nama = "Email Blast"
     else:
         df_aktif = st.session_state.df_sptjb
         kategori_nama = "SPTJB"
@@ -468,8 +475,8 @@ if menu == "🏠 Home / Beranda":
         st.markdown(
             f"""
             <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">📄 Verif SPTJB</p>
-                <h3 style="color: #d97706; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_verif_sptjb)}</h3>
+                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">📧 Email Blast</p>
+                <h3 style="color: #d97706; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_emailblast)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -538,6 +545,47 @@ elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
             
             detail_df = pd.DataFrame(detail_items)
             st.dataframe(detail_df, use_container_width=True, hide_index=True)
+
+elif menu == "📤 Upload & Kirim Email Blast":
+    st.markdown(
+        f"""
+        <div class="sticky-wrapper">
+            <h2 style="margin:0; padding:0; font-size: 1.75rem;">📧 Menu Email Blast (Data .xlsm)</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 0.95rem;">Unggah file Excel berformat .xlsm untuk memuat daftar penerima email blast.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    uploaded_file = st.file_uploader("Upload File Excel (.xlsm)", type=["xlsm"])
+    if uploaded_file is not None:
+        try:
+            # Membaca file xlsm menggunakan openpyxl
+            df_xlsm = pd.read_excel(uploaded_file, sheet_name=0, dtype=str)
+            df_xlsm = df_xlsm.dropna(how='all').fillna("")
+            st.session_state.df_emailblast = df_xlsm
+            st.success(f"🎉 Berhasil memuat file **{uploaded_file.name}**! Total baris data: {len(df_xlsm)}")
+        except Exception as e:
+            st.error(f"❌ Gagal membaca file .xlsm: {e}")
+
+    if len(st.session_state.df_emailblast) > 0:
+        st.markdown("---")
+        st.markdown("### 📋 **Pratinjau Data Penerima Email Blast:**")
+        st.dataframe(st.session_state.df_emailblast, use_container_width=True, height=350, hide_index=True)
+
+        st.markdown("---")
+        st.markdown("### ✉️ **Konfigurasi Pesan & Kirim Email**")
+        with st.form("form_email_blast"):
+            subject_email = st.text_input("Subjek Email", placeholder="Ketik subjek email...")
+            body_email = st.text_area("Isi Pesan Email", placeholder="Ketik isi pesan email di sini...")
+            submit_blast = st.form_submit_button("🚀 Kirim Email Blast Sekarang", use_container_width=True)
+
+            if submit_blast:
+                if not subject_email or not body_email:
+                    st.warning("⚠️ Subjek dan Isi Pesan Email wajib diisi!")
+                else:
+                    st.success("🎉 Proses pengiriman email blast simulasi berhasil dijalankan ke daftar penerima!")
+                    time.sleep(1)
 
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
