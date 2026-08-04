@@ -564,28 +564,12 @@ elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
         mask = df_verif.apply(lambda row: row.astype(str).str.contains(keyword_verif, case=False, na=False).any(), axis=1)
         df_verif = df_verif[mask]
 
-    column_config_dict = {}
-    for col in df_verif.columns:
-        if any(k in str(col).lower() for k in ["link", "dokumen", "url", "file", "upload"]):
-            column_config_dict[col] = st.column_config.LinkColumn(
-                str(col),
-                help="Klik untuk membuka tautan dokumen upload",
-                display_text="🔗 Buka Dokumen"
-            )
-        elif str(col).lower() == "checklist":
-            column_config_dict[col] = st.column_config.CheckboxColumn(
-                "Checklist",
-                help="Centang untuk menandai verifikasi",
-                default=False
-            )
-
     st.markdown("**Daftar Tabel Verifikasi SPTJB:**")
     st.dataframe(
         df_verif,
         use_container_width=True,
         height=400,
-        hide_index=True,
-        column_config=column_config_dict
+        hide_index=True
     )
 
     if len(df_verif) > 0:
@@ -628,21 +612,11 @@ elif menu == "📋 Lihat & Cari Data":
         
         st.markdown(f"**Menampilkan {len(filtered_df)} data:**")
         
-        column_config_dict = {}
-        for col in filtered_df.columns:
-            if any(k in str(col).lower() for k in ["link", "dokumen", "url", "file"]):
-                column_config_dict[col] = st.column_config.LinkColumn(
-                    str(col),
-                    help="Klik untuk membuka tautan dokumen",
-                    display_text="🔗 Buka Dokumen"
-                )
-
         st.dataframe(
             filtered_df,
             use_container_width=True,
             height=500,
-            hide_index=True,
-            column_config=column_config_dict
+            hide_index=True
         )
     else:
         st.info("Data belum tersedia atau kosong.")
