@@ -78,7 +78,6 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.current_user = DATABASE_USER[input_user_id]["nama"]
                     st.session_state.current_role = DATABASE_USER[input_user_id]["role"]
-                    # Menyimpan user ke query params agar tahan saat refresh browser
                     st.query_params["user"] = input_user_id
                     st.success(f"Login berhasil! Selamat datang, {DATABASE_USER[input_user_id]['nama']}")
                     time.sleep(1)
@@ -235,6 +234,12 @@ def load_data_klinik():
     try:
         df = pd.read_csv(URL_KLINIK, dtype=str)
         df.columns = df.columns.str.strip()
+        
+        # Menghilangkan kolom A, B, C, D jika ada di Google Sheets (berdasarkan indeks 0, 1, 2, 3)
+        if len(df.columns) > 4:
+            df = df.iloc[:, 4:]
+            df.columns = df.columns.str.strip()
+            
         df = df.dropna(how='all').reset_index(drop=True)
         if "No." not in df.columns:
             df.insert(0, "No.", range(1, len(df) + 1))
@@ -349,7 +354,6 @@ if st.sidebar.button("🚪 Logout", use_container_width=True):
     st.session_state.logged_in = False
     st.session_state.current_user = ""
     st.session_state.current_role = ""
-    # Menghapus query params saat logout
     st.query_params.clear()
     st.rerun()
 
