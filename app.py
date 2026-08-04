@@ -351,21 +351,6 @@ def load_data_verifikator():
     except Exception as e:
         return pd.DataFrame()
 
-# ==========================================
-# FUNGSI HITUNG TOTAL REALISASI SPTJB
-# ==========================================
-def get_total_realisasi(df):
-    if df is None or len(df) == 0:
-        return 0.0
-    col_realisasi = next((col for col in df.columns if 'realisasi' in str(col).lower()), None)
-    if not col_realisasi:
-        return 0.0
-    
-    clean_series = df[col_realisasi].astype(str).str.replace(r'[^0-9,\.]', '', regex=True)
-    clean_series = clean_series.str.replace(',', '.', regex=False)
-    numeric_values = pd.to_numeric(clean_series, errors='coerce').fillna(0)
-    return numeric_values.sum()
-
 def simpan_backup():
     st.session_state.df_dosen.to_csv("Backup_Data_Dosen.csv", index=False)
     st.session_state.df_staff.to_csv("Backup_Data_Staff.csv", index=False)
@@ -479,9 +464,7 @@ if menu == "🏠 Home / Beranda":
 
     st.markdown("### 📌 **Statistik Ringkas Sistem**")
     
-    total_realisasi_sptjb = get_total_realisasi(st.session_state.df_sptjb)
-
-    col_h1, col_h2, col_h3, col_h4 = st.columns(4)
+    col_h1, col_h2, col_h3 = st.columns(3)
     with col_h1:
         st.markdown(
             f"""
@@ -508,16 +491,6 @@ if menu == "🏠 Home / Beranda":
             <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <p style="color: #64748b; margin: 0; font-size: 0.8rem; font-weight: 600;">📄 Verif SPTJB</p>
                 <h3 style="color: #d97706; margin: 6px 0 0 0; font-size: 1.5rem;">{len(st.session_state.df_verif_sptjb)}</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    with col_h4:
-        st.markdown(
-            f"""
-            <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #16a34a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.8rem; font-weight: 600;">💰 Total Realisasi SPTJB</p>
-                <h3 style="color: #16a34a; margin: 6px 0 0 0; font-size: 1.2rem;">Rp {total_realisasi_sptjb:,.2f}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -573,10 +546,6 @@ elif menu == "📋 Lihat & Cari Data":
     )
 
     if len(df_aktif) > 0:
-        if kategori_nama == "SPTJB":
-            total_realisasi_current = get_total_realisasi(df_aktif)
-            st.success(f"💰 **Total Realisasi SPTJB Keseluruhan: Rp {total_realisasi_current:,.2f}**")
-
         keyword = st.text_input(f"Cari data {kategori_nama}:", placeholder="Ketik kata kunci...")
         filtered_df = df_aktif.copy()
         if keyword:
