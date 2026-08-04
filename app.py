@@ -264,20 +264,16 @@ def load_data_tor_mhs():
         except:
             pass
     if not URL_TOR_MHS:
-        return pd.DataFrame(columns=["No.", "Nama Mahasiswa", "NPM", "Judul Kegiatan TOR", "Departemen / Program Studi", "Nominal Pengajuan", "Status Pengajuan"])
+        return pd.DataFrame()
     try:
-        df = pd.read_csv(URL_TOR_MHS, dtype=str)
-        df.columns = df.columns.str.strip()
-        if len(df.columns) > 4:
-            df = df.iloc[:, 4:]
-            df.columns = df.columns.str.strip()
+        df_raw = pd.read_csv(URL_TOR_MHS, header=None, dtype=str)
+        df = df_raw.iloc[8:].copy() # Memulai baris header dari row index 8 (Row 9 di Google Sheets)
+        df.columns = df_raw.iloc[7].str.strip() # Mengambil nama kolom dari row index 7 (Row 8 di GSheets) jika diperlukan, atau langsung atur header row 9
         df = df.dropna(how='all').reset_index(drop=True)
-        if "No." not in df.columns:
-            df.insert(0, "No.", range(1, len(df) + 1))
         return df.fillna("")
     except Exception as e:
         st.error(f"Gagal memuat Google Sheets TOR Mahasiswa: {e}")
-        return pd.DataFrame(columns=["No.", "Nama Mahasiswa", "NPM", "Judul Kegiatan TOR", "Departemen / Program Studi", "Nominal Pengajuan", "Status Pengajuan"])
+        return pd.DataFrame()
 
 def load_data_sptjb():
     if not URL_SPTJB:
@@ -731,7 +727,6 @@ elif menu == "✏️ Edit Data":
     if len(df_aktif) == 0:
         st.info(f"Belum ada data {kategori_nama} untuk diedit.")
     else:
-        # Mencari kolom identitas berdasarkan kata 'nama' agar pilihan dropdown akurat
         if kategori_nama in ["Klinik", "TOR Mahasiswa"]:
             identitas_kolom = next((col for col in df_aktif.columns if "nama" in col.lower()), df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0])
         else:
