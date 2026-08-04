@@ -92,7 +92,7 @@ if not st.session_state.logged_in:
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
 URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 URL_ASLI_KLINIK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrAOfYGQUPB9ntgIfSOjPv4dGAea5ZCCsJXqSqwITRLWJ1NNvk9LvUcX58gOKTXA/pub?gid=772898747&single=true&output=csv"
-URL_ASLI_TOR_MHS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrAM-wUQzQPuYlrO0IRhrCy8JsE-ijQ16XE2ZMnlKGjuOdQ2rlK9hNgtf1dYp8Li9CjXJq7WGfI49I/pub?gid=291854399&single=true&output=csvv"
+URL_ASLI_TOR_MHS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrAM-wUQzQPuYlrO0IRhrCy8JsE-ijQ16XE2ZMnlKGjuOdQ2rlK9hNgtf1dYp8Li9CjXJq7WGfI49I/pub?gid=291854399&single=true&output=csv"
 
 def convert_sheets_url(url):
     if not url or "MASUKKAN_" in url:
@@ -566,7 +566,7 @@ elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
 
     st.markdown("**Daftar Tabel Verifikasi SPTJB:**")
     st.dataframe(
-        df_verif,
+        df_verif.astype(str),
         use_container_width=True,
         height=400,
         hide_index=True
@@ -590,7 +590,7 @@ elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
                 detail_items.append({"Nama Kolom": col_name, "Isi Data": val})
             
             detail_df = pd.DataFrame(detail_items)
-            st.dataframe(detail_df, use_container_width=True, hide_index=True)
+            st.dataframe(detail_df.astype(str), use_container_width=True, hide_index=True)
 
 elif menu == "📋 Lihat & Cari Data":
     st.markdown(
@@ -613,7 +613,7 @@ elif menu == "📋 Lihat & Cari Data":
         st.markdown(f"**Menampilkan {len(filtered_df)} data:**")
         
         st.dataframe(
-            filtered_df,
+            filtered_df.astype(str),
             use_container_width=True,
             height=500,
             hide_index=True
