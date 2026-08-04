@@ -79,6 +79,8 @@ if not st.session_state.logged_in:
 # ==========================================
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
 URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
+# Ubah URL di bawah ini dengan Link Publik Google Sheets Data Klinik Anda (format csv)
+URL_ASLI_KLINIK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrAOfYGQUPB9ntgIfSOjPv4dGAea5ZCCsJXqSqwITRLWJ1NNvk9LvUcX58gOKTXA/pub?gid=772898747&single=true&output=csv"
 
 def convert_sheets_url(url):
     if not url or "MASUKKAN_" in url:
@@ -95,6 +97,7 @@ def convert_sheets_url(url):
 
 URL_SPTJB = convert_sheets_url(URL_ASLI_SPTJB)
 URL_VERIF = convert_sheets_url(URL_ASLI_VERIFIKATOR)
+URL_KLINIK = convert_sheets_url(URL_ASLI_KLINIK)
 
 # ==========================================
 # FUNGSI MEMBACA GAMBAR LOKAL (ANTI GAGAL)
@@ -213,6 +216,20 @@ def load_data_staff():
     except:
         return pd.DataFrame(columns=["No.", "NIP", "NAMA", "JABATAN", "UNIT KERJA", "STATUS PEGAWAI", "JENIS KELAMIN", "HP", "Email"])
 
+def load_data_klinik():
+    if not URL_KLINIK:
+        return pd.DataFrame(columns=["No.", "Nama Klinik", "Kode Klinik", "Penanggung Jawab", "Lokasi / Alamat", "Nomor Telepon", "Keterangan"])
+    try:
+        df = pd.read_csv(URL_KLINIK, dtype=str)
+        df.columns = df.columns.str.strip()
+        df = df.dropna(how='all').reset_index(drop=True)
+        if "No." not in df.columns:
+            df.insert(0, "No.", range(1, len(df) + 1))
+        return df.fillna("")
+    except Exception as e:
+        st.error(f"Gagal memuat Google Sheets Data Klinik: {e}")
+        return pd.DataFrame(columns=["No.", "Nama Klinik", "Kode Klinik", "Penanggung Jawab", "Lokasi / Alamat", "Nomor Telepon", "Keterangan"])
+
 def load_data_sptjb():
     if not URL_SPTJB:
         return pd.DataFrame()
@@ -253,7 +270,6 @@ def load_data_sptjb():
         st.error(f"Gagal memuat Google Sheets SPTJB: {e}")
         return pd.DataFrame()
 
-# Khusus memuat data Verifikator (Mengambil Kolom D=3, F=5, M=12 [Kolom M9], BZ=77, CA=78)
 def load_data_verifikator():
     if not URL_VERIF:
         return pd.DataFrame()
@@ -305,6 +321,8 @@ if "df_dosen" not in st.session_state:
     st.session_state.df_dosen = load_data_dosen()
 if "df_staff" not in st.session_state:
     st.session_state.df_staff = load_data_staff()
+if "df_klinik" not in st.session_state:
+    st.session_state.df_klinik = load_data_klinik()
 if "df_sptjb" not in st.session_state:
     st.session_state.df_sptjb = load_data_sptjb()
 if "df_verif_sptjb" not in st.session_state:
@@ -339,11 +357,11 @@ if st.session_state.current_role == "verifikator":
 else:
     kategori_data = st.sidebar.radio(
         "👥 Pilih Kategori Data:",
-        ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "📄 Nomor SPTJB"]
+        ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "🏥 Data Klinik", "📄 Nomor SPTJB"]
     )
     st.sidebar.markdown("---")
 
-    if kategori_data == "📄 Nomor SPTJB":
+    if kategori_data in ["📄 Nomor SPTJB", "🏥 Data Klinik"]:
         menu = st.sidebar.selectbox("Pilih Menu Navigasi", ["🏠 Home / Beranda", "📋 Lihat & Cari Data"])
     else:
         menu = st.sidebar.selectbox(
@@ -360,6 +378,9 @@ else:
     elif kategori_data == "👨‍💼 Data Staff":
         df_aktif = st.session_state.df_staff
         kategori_nama = "Staff"
+    elif kategori_data == "🏥 Data Klinik":
+        df_aktif = st.session_state.df_klinik
+        kategori_nama = "Klinik"
     else:
         df_aktif = st.session_state.df_sptjb
         kategori_nama = "SPTJB"
@@ -388,13 +409,13 @@ if menu == "🏠 Home / Beranda":
 
     st.markdown("### 📌 **Statistik Ringkas Sistem**")
     
-    col_h1, col_h2, col_h3 = st.columns(3)
+    col_h1, col_h2, col_h3, col_h4 = st.columns(4)
     with col_h1:
         st.markdown(
             f"""
-            <div style="background-color: #ffffff; padding: 22px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a8a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.95rem; font-weight: 600;">👨‍⚕️ Total Data Dosen</p>
-                <h3 style="color: #1e3a8a; margin: 8px 0 0 0; font-size: 2rem;">{len(st.session_state.df_dosen)}</h3>
+            <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a8a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">👨‍⚕️ Data Dosen</p>
+                <h3 style="color: #1e3a8a; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_dosen)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -402,9 +423,9 @@ if menu == "🏠 Home / Beranda":
     with col_h2:
         st.markdown(
             f"""
-            <div style="background-color: #ffffff; padding: 22px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #0d9488; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.95rem; font-weight: 600;">👨‍💼 Total Data Staff / Tendik</p>
-                <h3 style="color: #0d9488; margin: 8px 0 0 0; font-size: 2rem;">{len(st.session_state.df_staff)}</h3>
+            <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #0d9488; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">👨‍💼 Data Staff</p>
+                <h3 style="color: #0d9488; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_staff)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -412,9 +433,19 @@ if menu == "🏠 Home / Beranda":
     with col_h3:
         st.markdown(
             f"""
-            <div style="background-color: #ffffff; padding: 22px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.95rem; font-weight: 600;">📄 Total Verifikasi SPTJB</p>
-                <h3 style="color: #d97706; margin: 8px 0 0 0; font-size: 2rem;">{len(st.session_state.df_verif_sptjb)}</h3>
+            <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">🏥 Data Klinik</p>
+                <h3 style="color: #2563eb; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_klinik)}</h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with col_h4:
+        st.markdown(
+            f"""
+            <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">📄 Verif SPTJB</p>
+                <h3 style="color: #d97706; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_verif_sptjb)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -495,8 +526,8 @@ elif menu == "📋 Lihat & Cari Data":
         unsafe_allow_html=True
     )
 
-    if kategori_nama == "SPTJB":
-        keyword = st.text_input("Cari SPTJB (berdasarkan kata kunci):", placeholder="Ketik di sini...")
+    if kategori_nama in ["SPTJB", "Klinik"]:
+        keyword = st.text_input(f"Cari {kategori_nama} (berdasarkan kata kunci):", placeholder="Ketik di sini...")
         filtered_df = df_aktif.copy()
         if keyword and len(filtered_df.columns) > 0:
             mask = filtered_df.apply(lambda row: row.astype(str).str.contains(keyword, case=False, na=False).any(), axis=1)
