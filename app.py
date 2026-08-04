@@ -92,6 +92,7 @@ if not st.session_state.logged_in:
 URL_ASLI_SPTJB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=87462462&single=true&output=csv"
 URL_ASLI_VERIFIKATOR = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSm7LCABdy45Kmaid-V2eab1MA9so7Os7Nt01FeQlIaAcHxNksu6PrfgJQaVQPWWAPNxhvwdrSXoaOq/pub?gid=848950239&single=true&output=csv"
 URL_ASLI_KLINIK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrAOfYGQUPB9ntgIfSOjPv4dGAea5ZCCsJXqSqwITRLWJ1NNvk9LvUcX58gOKTXA/pub?gid=772898747&single=true&output=csv"
+URL_ASLI_TOR_MHS = "https://docs.google.com/spreadsheets/d/e/MASUKKAN_LINK_PUBLIK_GIDS_TOR_MHS_DI_SINI/pub?output=csv"
 
 def convert_sheets_url(url):
     if not url or "MASUKKAN_" in url:
@@ -109,6 +110,7 @@ def convert_sheets_url(url):
 URL_SPTJB = convert_sheets_url(URL_ASLI_SPTJB)
 URL_VERIF = convert_sheets_url(URL_ASLI_VERIFIKATOR)
 URL_KLINIK = convert_sheets_url(URL_ASLI_KLINIK)
+URL_TOR_MHS = convert_sheets_url(URL_ASLI_TOR_MHS)
 
 # ==========================================
 # FUNGSI MEMBACA GAMBAR LOKAL (ANTI GAGAL)
@@ -252,6 +254,31 @@ def load_data_klinik():
         st.error(f"Gagal memuat Google Sheets Data Klinik: {e}")
         return pd.DataFrame(columns=["No.", "Nama Klinik", "Kode Klinik", "Penanggung Jawab", "Lokasi / Alamat", "Nomor Telepon", "Keterangan"])
 
+def load_data_tor_mhs():
+    if os.path.exists("Backup_Data_TOR_Mhs.csv"):
+        try:
+            df = pd.read_csv("Backup_Data_TOR_Mhs.csv", dtype=str)
+            if len(df) > 0: 
+                df.columns = df.columns.str.strip()
+                return df.fillna("")
+        except:
+            pass
+    if not URL_TOR_MHS:
+        return pd.DataFrame(columns=["No.", "Nama Mahasiswa", "NPM", "Judul Kegiatan TOR", "Departemen / Program Studi", "Nominal Pengajuan", "Status Pengajuan"])
+    try:
+        df = pd.read_csv(URL_TOR_MHS, dtype=str)
+        df.columns = df.columns.str.strip()
+        if len(df.columns) > 4:
+            df = df.iloc[:, 4:]
+            df.columns = df.columns.str.strip()
+        df = df.dropna(how='all').reset_index(drop=True)
+        if "No." not in df.columns:
+            df.insert(0, "No.", range(1, len(df) + 1))
+        return df.fillna("")
+    except Exception as e:
+        st.error(f"Gagal memuat Google Sheets TOR Mahasiswa: {e}")
+        return pd.DataFrame(columns=["No.", "Nama Mahasiswa", "NPM", "Judul Kegiatan TOR", "Departemen / Program Studi", "Nominal Pengajuan", "Status Pengajuan"])
+
 def load_data_sptjb():
     if not URL_SPTJB:
         return pd.DataFrame()
@@ -339,6 +366,7 @@ def simpan_backup():
     st.session_state.df_dosen.to_csv("Backup_Data_Dosen.csv", index=False)
     st.session_state.df_staff.to_csv("Backup_Data_Staff.csv", index=False)
     st.session_state.df_klinik.to_csv("Backup_Data_Klinik.csv", index=False)
+    st.session_state.df_tor_mhs.to_csv("Backup_Data_TOR_Mhs.csv", index=False)
 
 if "df_dosen" not in st.session_state:
     st.session_state.df_dosen = load_data_dosen()
@@ -346,6 +374,8 @@ if "df_staff" not in st.session_state:
     st.session_state.df_staff = load_data_staff()
 if "df_klinik" not in st.session_state:
     st.session_state.df_klinik = load_data_klinik()
+if "df_tor_mhs" not in st.session_state:
+    st.session_state.df_tor_mhs = load_data_tor_mhs()
 if "df_sptjb" not in st.session_state:
     st.session_state.df_sptjb = load_data_sptjb()
 if "df_verif_sptjb" not in st.session_state:
@@ -381,7 +411,7 @@ if st.session_state.current_role == "verifikator":
 else:
     kategori_data = st.sidebar.radio(
         "👥 Pilih Kategori Data:",
-        ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "🏥 Data Klinik", "📄 Nomor SPTJB"]
+        ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "🏥 Data Klinik", "🎓 TOR Mahasiswa", "📄 Nomor SPTJB"]
     )
     st.sidebar.markdown("---")
 
@@ -405,6 +435,9 @@ else:
     elif kategori_data == "🏥 Data Klinik":
         df_aktif = st.session_state.df_klinik
         kategori_nama = "Klinik"
+    elif kategori_data == "🎓 TOR Mahasiswa":
+        df_aktif = st.session_state.df_tor_mhs
+        kategori_nama = "TOR Mahasiswa"
     else:
         df_aktif = st.session_state.df_sptjb
         kategori_nama = "SPTJB"
@@ -433,13 +466,13 @@ if menu == "🏠 Home / Beranda":
 
     st.markdown("### 📌 **Statistik Ringkas Sistem**")
     
-    col_h1, col_h2, col_h3, col_h4 = st.columns(4)
+    col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns(5)
     with col_h1:
         st.markdown(
             f"""
-            <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a8a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">👨‍⚕️ Data Dosen</p>
-                <h3 style="color: #1e3a8a; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_dosen)}</h3>
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a8a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.8rem; font-weight: 600;">👨‍⚕️ Data Dosen</p>
+                <h3 style="color: #1e3a8a; margin: 6px 0 0 0; font-size: 1.5rem;">{len(st.session_state.df_dosen)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -447,9 +480,9 @@ if menu == "🏠 Home / Beranda":
     with col_h2:
         st.markdown(
             f"""
-            <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #0d9488; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">👨‍💼 Data Staff</p>
-                <h3 style="color: #0d9488; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_staff)}</h3>
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #0d9488; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.8rem; font-weight: 600;">👨‍💼 Data Staff</p>
+                <h3 style="color: #0d9488; margin: 6px 0 0 0; font-size: 1.5rem;">{len(st.session_state.df_staff)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -457,9 +490,9 @@ if menu == "🏠 Home / Beranda":
     with col_h3:
         st.markdown(
             f"""
-            <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">🏥 Data Klinik</p>
-                <h3 style="color: #2563eb; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_klinik)}</h3>
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.8rem; font-weight: 600;">🏥 Data Klinik</p>
+                <h3 style="color: #2563eb; margin: 6px 0 0 0; font-size: 1.5rem;">{len(st.session_state.df_klinik)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -467,9 +500,19 @@ if menu == "🏠 Home / Beranda":
     with col_h4:
         st.markdown(
             f"""
-            <div style="background-color: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-weight: 600;">📄 Verif SPTJB</p>
-                <h3 style="color: #d97706; margin: 6px 0 0 0; font-size: 1.7rem;">{len(st.session_state.df_verif_sptjb)}</h3>
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #7c3aed; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.8rem; font-weight: 600;">🎓 TOR Mhs</p>
+                <h3 style="color: #7c3aed; margin: 6px 0 0 0; font-size: 1.5rem;">{len(st.session_state.df_tor_mhs)}</h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with col_h5:
+        st.markdown(
+            f"""
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="color: #64748b; margin: 0; font-size: 0.8rem; font-weight: 600;">📄 Verif SPTJB</p>
+                <h3 style="color: #d97706; margin: 6px 0 0 0; font-size: 1.5rem;">{len(st.session_state.df_verif_sptjb)}</h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -576,13 +619,19 @@ elif menu == "📋 Lihat & Cari Data":
             column_config=column_config_dict
         )
     elif kategori_nama == "Klinik":
-        keyword = st.text_input("Cari Klinik (berdasarkan Nama Klinik atau Penanggung Jawab):", placeholder="Ketik di sini...")
+        keyword = st.text_input("Cari Klinik (berdasarkan kata kunci):", placeholder="Ketik di sini...")
         filtered_df = df_aktif.copy()
-        if keyword and "Nama Klinik" in filtered_df.columns and "Penanggung Jawab" in filtered_df.columns:
-            filtered_df = filtered_df[
-                filtered_df["Nama Klinik"].astype(str).str.contains(keyword, case=False, na=False) |
-                filtered_df["Penanggung Jawab"].astype(str).str.contains(keyword, case=False, na=False)
-            ]
+        if keyword and len(filtered_df.columns) > 0:
+            mask = filtered_df.apply(lambda row: row.astype(str).str.contains(keyword, case=False, na=False).any(), axis=1)
+            filtered_df = filtered_df[mask]
+        st.markdown(f"**Menampilkan {len(filtered_df)} data:**")
+        st.dataframe(filtered_df, use_container_width=True, height=500, hide_index=True)
+    elif kategori_nama == "TOR Mahasiswa":
+        keyword = st.text_input("Cari TOR Mahasiswa (berdasarkan kata kunci):", placeholder="Ketik di sini...")
+        filtered_df = df_aktif.copy()
+        if keyword and len(filtered_df.columns) > 0:
+            mask = filtered_df.apply(lambda row: row.astype(str).str.contains(keyword, case=False, na=False).any(), axis=1)
+            filtered_df = filtered_df[mask]
         st.markdown(f"**Menampilkan {len(filtered_df)} data:**")
         st.dataframe(filtered_df, use_container_width=True, height=500, hide_index=True)
     else:
@@ -637,11 +686,22 @@ elif menu == "➕ Tambah Data Baru":
                 lokasi = st.text_area("Lokasi / Alamat Klinik")
                 telepon = st.text_input("Nomor Telepon")
                 keterangan = st.text_input("Keterangan Tambahan")
+        elif kategori_nama == "TOR Mahasiswa":
+            with col1:
+                nama_mhs = st.text_input("Nama Mahasiswa*")
+                npm_mhs = st.text_input("NPM*")
+                judul_tor = st.text_input("Judul Kegiatan TOR*")
+            with col2:
+                departemen_mhs = st.text_input("Departemen / Program Studi")
+                nominal_tor = st.text_input("Nominal Pengajuan (Rp)")
+                status_tor = st.selectbox("Status Pengajuan", ["Diajukan", "Verifikasi", "Disetujui", "Ditolak"])
                 
         submit_button = st.form_submit_button(f"💾 Simpan Data {kategori_nama}", use_container_width=True)
         if submit_button:
             if kategori_nama == "Klinik" and not nama_klinik:
                 st.warning("⚠️ Nama Klinik wajib diisi!")
+            elif kategori_nama == "TOR Mahasiswa" and (not nama_mhs or not npm_mhs):
+                st.warning("⚠️ Nama Mahasiswa dan NPM wajib diisi!")
             elif kategori_nama in ["Dosen", "Staff"] and not locals().get("nama", ""):
                 st.warning("⚠️ Nama Lengkap wajib diisi!")
             else:
@@ -657,6 +717,10 @@ elif menu == "➕ Tambah Data Baru":
                     new_data = {"No.": len(df_aktif)+1, "Nama Klinik": nama_klinik, "Kode Klinik": kode_klinik, "Penanggung Jawab": penanggung_jawab, "Lokasi / Alamat": lokasi, "Nomor Telepon": telepon, "Keterangan": keterangan}
                     st.session_state.df_klinik = pd.concat([st.session_state.df_klinik, pd.DataFrame([new_data])], ignore_index=True)
                     simpan_backup()
+                elif kategori_nama == "TOR Mahasiswa":
+                    new_data = {"No.": len(df_aktif)+1, "Nama Mahasiswa": nama_mhs, "NPM": npm_mhs, "Judul Kegiatan TOR": judul_tor, "Departemen / Program Studi": departemen_mhs, "Nominal Pengajuan": nominal_tor, "Status Pengajuan": status_tor}
+                    st.session_state.df_tor_mhs = pd.concat([st.session_state.df_tor_mhs, pd.DataFrame([new_data])], ignore_index=True)
+                    simpan_backup()
                 
                 st.success(f"🎉 Data {kategori_nama} berhasil ditambahkan!")
                 time.sleep(1.5)
@@ -667,16 +731,19 @@ elif menu == "✏️ Edit Data":
     if len(df_aktif) == 0:
         st.info(f"Belum ada data {kategori_nama} untuk diedit.")
     else:
+        # Menentukan kolom referensi pilihan berdasarkan indeks kolom aktual agar aman dari beda nama header
         if kategori_nama == "Klinik":
-            identitas_kolom = next((col for col in df_aktif.columns if "nama" in col.lower() and "klinik" in col.lower()), df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0])
+            identitas_kolom = df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0]
+        elif kategori_nama == "TOR Mahasiswa":
+            identitas_kolom = df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0]
         else:
-            identitas_kolom = "NAMA"
+            identitas_kolom = "NAMA" if "NAMA" in df_aktif.columns else df_aktif.columns[1]
 
         pilihan = df_aktif[identitas_kolom].dropna().tolist() if identitas_kolom in df_aktif.columns else []
         if not pilihan:
-            st.warning(f"Kolom identitas '{identitas_kolom}' tidak ditemukan pada data.")
+            st.warning(f"Kolom identitas tidak ditemukan pada data.")
         else:
-            to_edit = st.selectbox(f"Pilih {kategori_nama} yang ingin diedit:", pilihan)
+            to_edit = st.selectbox(f"Pilih data {kategori_nama} yang ingin diedit:", pilihan)
             old_data = df_aktif[df_aktif[identitas_kolom] == to_edit].iloc[0]
             idx = df_aktif[df_aktif[identitas_kolom] == to_edit].index[0]
             
@@ -708,19 +775,49 @@ elif menu == "✏️ Edit Data":
                         hp = st.text_input("Nomor HP", value=clean_val(old_data.get("HP")))
                         email = st.text_input("Email", value=clean_val(old_data.get("Email")))
                 elif kategori_nama == "Klinik":
+                    # Mengambil nilai berdasarkan urutan kolom aktif agar aman dari perbedaan nama header
+                    c_list = list(df_aktif.columns)
+                    val_nm = clean_val(old_data[c_list[1]]) if len(c_list) > 1 else ""
+                    val_kd = clean_val(old_data[c_list[2]]) if len(c_list) > 2 else ""
+                    val_pj = clean_val(old_data[c_list[3]]) if len(c_list) > 3 else ""
+                    val_lok = clean_val(old_data[c_list[4]]) if len(c_list) > 4 else ""
+                    val_tel = clean_val(old_data[c_list[5]]) if len(c_list) > 5 else ""
+                    val_ket = clean_val(old_data[c_list[6]]) if len(c_list) > 6 else ""
+
                     with col1:
-                        nama_klinik = st.text_input("Nama Klinik*", value=clean_val(old_data.get("Nama Klinik")))
-                        kode_klinik = st.text_input("Kode Klinik", value=clean_val(old_data.get("Kode Klinik")))
-                        penanggung_jawab = st.text_input("Penanggung Jawab", value=clean_val(old_data.get("Penanggung Jawab")))
+                        nama_klinik = st.text_input("Nama Klinik*", value=val_nm)
+                        kode_klinik = st.text_input("Kode Klinik", value=val_kd)
+                        penanggung_jawab = st.text_input("Penanggung Jawab", value=val_pj)
                     with col2:
-                        lokasi = st.text_area("Lokasi / Alamat Klinik", value=clean_val(old_data.get("Lokasi / Alamat")))
-                        telepon = st.text_input("Nomor Telepon", value=clean_val(old_data.get("Nomor Telepon")))
-                        keterangan = st.text_input("Keterangan Tambahan", value=clean_val(old_data.get("Keterangan")))
+                        lokasi = st.text_area("Lokasi / Alamat Klinik", value=val_lok)
+                        telepon = st.text_input("Nomor Telepon", value=val_tel)
+                        keterangan = st.text_input("Keterangan Tambahan", value=val_ket)
+                elif kategori_nama == "TOR Mahasiswa":
+                    c_list = list(df_aktif.columns)
+                    val_nm_mhs = clean_val(old_data[c_list[1]]) if len(c_list) > 1 else ""
+                    val_npm_mhs = clean_val(old_data[c_list[2]]) if len(c_list) > 2 else ""
+                    val_jdl_tor = clean_val(old_data[c_list[3]]) if len(c_list) > 3 else ""
+                    val_dept_mhs = clean_val(old_data[c_list[4]]) if len(c_list) > 4 else ""
+                    val_nom_tor = clean_val(old_data[c_list[5]]) if len(c_list) > 5 else ""
+                    val_stat_tor = clean_val(old_data[c_list[6]]) if len(c_list) > 6 else "Diajukan"
+
+                    with col1:
+                        nama_mhs = st.text_input("Nama Mahasiswa*", value=val_nm_mhs)
+                        npm_mhs = st.text_input("NPM*", value=val_npm_mhs)
+                        judul_tor = st.text_input("Judul Kegiatan TOR*", value=val_jdl_tor)
+                    with col2:
+                        departemen_mhs = st.text_input("Departemen / Program Studi", value=val_dept_mhs)
+                        nominal_tor = st.text_input("Nominal Pengajuan (Rp)", value=val_nom_tor)
+                        status_opts_tor = ["Diajukan", "Verifikasi", "Disetujui", "Ditolak"]
+                        idx_status_tor = status_opts_tor.index(val_stat_tor) if val_stat_tor in status_opts_tor else 0
+                        status_tor = st.selectbox("Status Pengajuan", status_opts_tor, index=idx_status_tor)
 
                 submit_edit = st.form_submit_button("🔄 Perbarui Data", use_container_width=True)
                 if submit_edit:
                     if kategori_nama == "Klinik" and not nama_klinik:
                         st.warning("⚠️ Nama Klinik wajib diisi!")
+                    elif kategori_nama == "TOR Mahasiswa" and not nama_mhs:
+                        st.warning("⚠️ Nama Mahasiswa wajib diisi!")
                     elif kategori_nama in ["Dosen", "Staff"] and not locals().get("nama", ""):
                         st.warning("⚠️ Nama Lengkap wajib diisi!")
                     else:
@@ -734,12 +831,22 @@ elif menu == "✏️ Edit Data":
                             st.session_state.df_staff.at[idx, "STATUS PEGAWAI"], st.session_state.df_staff.at[idx, "JENIS KELAMIN"], st.session_state.df_staff.at[idx, "HP"], st.session_state.df_staff.at[idx, "Email"] = status_pegawai, jenis_kelamin, str(hp), email
                             simpan_backup()
                         elif kategori_nama == "Klinik":
-                            st.session_state.df_klinik.at[idx, "Nama Klinik"] = nama_klinik
-                            st.session_state.df_klinik.at[idx, "Kode Klinik"] = kode_klinik
-                            st.session_state.df_klinik.at[idx, "Penanggung Jawab"] = penanggung_jawab
-                            st.session_state.df_klinik.at[idx, "Lokasi / Alamat"] = lokasi
-                            st.session_state.df_klinik.at[idx, "Nomor Telepon"] = telepon
-                            st.session_state.df_klinik.at[idx, "Keterangan"] = keterangan
+                            c_list = list(df_aktif.columns)
+                            if len(c_list) > 1: st.session_state.df_klinik.at[idx, c_list[1]] = nama_klinik
+                            if len(c_list) > 2: st.session_state.df_klinik.at[idx, c_list[2]] = kode_klinik
+                            if len(c_list) > 3: st.session_state.df_klinik.at[idx, c_list[3]] = penanggung_jawab
+                            if len(c_list) > 4: st.session_state.df_klinik.at[idx, c_list[4]] = lokasi
+                            if len(c_list) > 5: st.session_state.df_klinik.at[idx, c_list[5]] = telepon
+                            if len(c_list) > 6: st.session_state.df_klinik.at[idx, c_list[6]] = keterangan
+                            simpan_backup()
+                        elif kategori_nama == "TOR Mahasiswa":
+                            c_list = list(df_aktif.columns)
+                            if len(c_list) > 1: st.session_state.df_tor_mhs.at[idx, c_list[1]] = nama_mhs
+                            if len(c_list) > 2: st.session_state.df_tor_mhs.at[idx, c_list[2]] = npm_mhs
+                            if len(c_list) > 3: st.session_state.df_tor_mhs.at[idx, c_list[3]] = judul_tor
+                            if len(c_list) > 4: st.session_state.df_tor_mhs.at[idx, c_list[4]] = departemen_mhs
+                            if len(c_list) > 5: st.session_state.df_tor_mhs.at[idx, c_list[5]] = nominal_tor
+                            if len(c_list) > 6: st.session_state.df_tor_mhs.at[idx, c_list[6]] = status_tor
                             simpan_backup()
                         
                         st.success(f"✅ Data {kategori_nama} berhasil diperbarui!")
@@ -752,15 +859,17 @@ elif menu == "🗑️ Hapus Data":
         st.info(f"Tidak ada data {kategori_nama} untuk dihapus.")
     else:
         if kategori_nama == "Klinik":
-            identitas_kolom = next((col for col in df_aktif.columns if "nama" in col.lower() and "klinik" in col.lower()), df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0])
+            identitas_kolom = df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0]
+        elif kategori_nama == "TOR Mahasiswa":
+            identitas_kolom = df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0]
         else:
-            identitas_kolom = "NAMA"
+            identitas_kolom = "NAMA" if "NAMA" in df_aktif.columns else df_aktif.columns[1]
 
         pilihan = df_aktif[identitas_kolom].dropna().tolist() if identitas_kolom in df_aktif.columns else []
         if not pilihan:
-            st.warning(f"Kolom identitas '{identitas_kolom}' tidak ditemukan pada data.")
+            st.warning(f"Kolom identitas tidak ditemukan pada data.")
         else:
-            to_delete = st.selectbox(f"Pilih {kategori_nama} yang ingin dihapus:", pilihan)
+            to_delete = st.selectbox(f"Pilih data {kategori_nama} yang ingin dihapus:", pilihan)
 
             if st.button("🗑️ Hapus Data", type="primary"):
                 if kategori_nama == "Dosen":
@@ -770,7 +879,10 @@ elif menu == "🗑️ Hapus Data":
                     st.session_state.df_staff = st.session_state.df_staff[st.session_state.df_staff["NAMA"] != to_delete].reset_index(drop=True)
                     simpan_backup()
                 elif kategori_nama == "Klinik":
-                    st.session_state.df_klinik = st.session_state.df_klinik[st.session_state.df_klinik["Nama Klinik"] != to_delete].reset_index(drop=True)
+                    st.session_state.df_klinik = st.session_state.df_klinik[st.session_state.df_klinik[identitas_kolom] != to_delete].reset_index(drop=True)
+                    simpan_backup()
+                elif kategori_nama == "TOR Mahasiswa":
+                    st.session_state.df_tor_mhs = st.session_state.df_tor_mhs[st.session_state.df_tor_mhs[identitas_kolom] != to_delete].reset_index(drop=True)
                     simpan_backup()
                 
                 st.success(f"✅ Data {kategori_nama} **{to_delete}** berhasil dihapus!")
