@@ -285,6 +285,7 @@ def load_data_tor_mhs():
             headers.append(h_val)
         df.columns = headers
         
+        # Mencegah error duplikasi nama kolom secara otomatis
         cols = pd.Series(df.columns)
         for dup in cols[cols.duplicated()].unique(): 
             cols[cols == dup] = [dup + f"_{i}" if i != 0 else dup for i in range(sum(cols == dup))]
