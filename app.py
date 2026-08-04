@@ -231,7 +231,9 @@ def load_data_klinik():
     if os.path.exists("Backup_Data_Klinik.csv"):
         try:
             df = pd.read_csv("Backup_Data_Klinik.csv", dtype=str)
-            if len(df) > 0: return df.fillna("")
+            if len(df) > 0: 
+                df.columns = df.columns.str.strip()
+                return df.fillna("")
         except:
             pass
     if not URL_KLINIK:
@@ -665,7 +667,11 @@ elif menu == "✏️ Edit Data":
     if len(df_aktif) == 0:
         st.info(f"Belum ada data {kategori_nama} untuk diedit.")
     else:
-        identitas_kolom = "Nama Klinik" if kategori_nama == "Klinik" else "NAMA"
+        if kategori_nama == "Klinik":
+            identitas_kolom = next((col for col in df_aktif.columns if "nama" in col.lower() and "klinik" in col.lower()), df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0])
+        else:
+            identitas_kolom = "NAMA"
+
         pilihan = df_aktif[identitas_kolom].dropna().tolist() if identitas_kolom in df_aktif.columns else []
         if not pilihan:
             st.warning(f"Kolom identitas '{identitas_kolom}' tidak ditemukan pada data.")
@@ -745,7 +751,11 @@ elif menu == "🗑️ Hapus Data":
     if len(df_aktif) == 0:
         st.info(f"Tidak ada data {kategori_nama} untuk dihapus.")
     else:
-        identitas_kolom = "Nama Klinik" if kategori_nama == "Klinik" else "NAMA"
+        if kategori_nama == "Klinik":
+            identitas_kolom = next((col for col in df_aktif.columns if "nama" in col.lower() and "klinik" in col.lower()), df_aktif.columns[1] if len(df_aktif.columns) > 1 else df_aktif.columns[0])
+        else:
+            identitas_kolom = "NAMA"
+
         pilihan = df_aktif[identitas_kolom].dropna().tolist() if identitas_kolom in df_aktif.columns else []
         if not pilihan:
             st.warning(f"Kolom identitas '{identitas_kolom}' tidak ditemukan pada data.")
