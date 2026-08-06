@@ -140,7 +140,7 @@ def get_image_base64(file_path):
 LOGO_SRC = get_image_base64("logo_unpad.png")
 
 # ==========================================
-# CSS KHUSUS (STICKY HEADER & MODERN STYLE)
+# CSS KHUSUS (CLEAN MODERN SIDEBAR & STICKY HEADER)
 # ==========================================
 st.markdown(
     f"""
@@ -184,19 +184,27 @@ st.markdown(
         border-bottom: 1px solid #e5e7eb;
         margin-bottom: 15px;
     }}
-    .sidebar-category-header {{
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        border: 1px solid #cbd5e1;
-        padding: 10px 14px;
-        border-radius: 8px;
-        font-weight: 700;
-        color: #1e3a8a;
-        margin-bottom: 8px;
-        font-size: 0.95rem;
-        letter-spacing: 0.3px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    /* Custom styling untuk sidebar radio agar menyerupai menu navigasi modern */
+    .stRadio > label {{
+        display: none !important;
     }}
-    /* CSS agar Header Tabel (st.table / th) tetap statis / sticky saat di-scroll */
+    .stRadio div[role="radiogroup"] {{
+        gap: 4px;
+    }}
+    .stRadio div[role="radiogroup"] label {{
+        background-color: transparent;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-weight: 500;
+        color: #334155;
+        transition: all 0.2s ease;
+    }}
+    .stRadio div[role="radiogroup"] label:hover {{
+        background-color: #f1f5f9;
+        color: #1e3a8a;
+    }}
+    /* CSS agar Header Tabel tetap statis / sticky saat di-scroll */
     .stTable div {{
         max-height: 550px;
         overflow-y: auto;
@@ -365,13 +373,13 @@ if "df_verif_sptjb" not in st.session_state:
     st.session_state.df_verif_sptjb = load_data_verifikator()
 
 # ==========================================
-# SIDEBAR & NAVIGASI
+# SIDEBAR & NAVIGASI (GAYA MENU ELEGAN)
 # ==========================================
 st.sidebar.markdown(
     f"""
-    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 16px; border-radius: 12px; color: white; margin-bottom: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-        <p style="margin:0; font-size: 0.8rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;">Akun Terautentikasi</p>
-        <h4 style="margin: 6px 0 0 0; font-size: 1.1rem; font-weight: 700;"><b>{st.session_state.current_user}</b></h4>
+    <div style="padding: 10px 0 15px 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 15px;">
+        <span style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Pengguna Aktif</span><br>
+        <b style="font-size: 1.05Linkrem; color: #1e3a8a;">{st.session_state.current_user}</b>
     </div>
     """,
     unsafe_allow_html=True
@@ -388,52 +396,54 @@ st.sidebar.markdown("---")
 
 if st.session_state.current_role == "verifikator":
     kategori_data = "✔️ Verifikator SPTJB"
-    st.sidebar.markdown('<div class="sidebar-category-header">🛡️ Panel Kategori Utama</div>', unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px;'>Navigasi Verifikasi</p>", unsafe_allow_html=True)
+    menu = st.sidebar.radio(
+        "Navigasi Verifikator",
+        ["🏠 Home", "📊 Verifikasi & Cek Dokumen SPTJB"],
+        label_visibility="collapsed"
+    )
     st.sidebar.markdown("---")
-    menu = st.sidebar.selectbox("Pilih Menu Navigasi", [
-        "🏠 Home / Beranda",
-        "🔍 Verifikasi & Cek Dokumen SPTJB"
-    ])
-    st.sidebar.markdown("---")
-    st.sidebar.info("Anda berada di **Mode Verifikator Khusus**")
+    st.sidebar.info("🛡️ Mode Verifikator Khusus Aktif")
     
     df_aktif = st.session_state.df_verif_sptjb
     kategori_nama = "Verifikasi SPTJB"
 
 else:
-    st.sidebar.markdown('<div class="sidebar-category-header">✨ Menu Kategori Data</div>', unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px;'>Menu Kategori Data</p>", unsafe_allow_html=True)
     
     kategori_data = st.sidebar.radio(
         "Pilih Kategori Navigasi Data",
-        ["👨‍⚕️ Data Dosen", "👨‍💼 Data Staff", "📄 Nomor SPTJB"],
+        ["👨‍⚕️ Finance / Dosen", "🤝 Kerjasama / Staff", "📋 Report & Reference / SPTJB"],
         label_visibility="collapsed"
     )
     
     st.sidebar.markdown("---")
+    st.sidebar.markdown("<p style='font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px;'>Aksi Menu</p>", unsafe_allow_html=True)
 
-    if kategori_data == "📄 Nomor SPTJB":
-        menu = st.sidebar.selectbox("🧭 Pilih Menu Navigasi", ["🏠 Home / Beranda", "📋 Lihat & Cari Data"])
+    if "SPTJB" in kategori_data:
+        menu = st.sidebar.radio("Menu SPTJB", ["🏠 Home", "📋 Lihat & Cari Data"], label_visibility="collapsed")
     else:
-        menu = st.sidebar.selectbox(
-            "🧭 Pilih Menu Navigasi",
-            ["🏠 Home / Beranda", "📋 Lihat & Cari Data", "➕ Tambah Data Baru", "✏️ Edit Data", "🗑️ Hapus Data", "📥 Unduh / Simpan ke Excel"],
+        menu = st.sidebar.radio(
+            "Menu Utama",
+            ["🏠 Home", "📋 Lihat & Cari Data", "➕ Tambah Data Baru", "✏️ Edit Data", "🗑️ Hapus Data", "📥 Unduh ke Excel"],
+            label_visibility="collapsed"
         )
 
     st.sidebar.markdown("---")
     st.sidebar.markdown(
         f"""
-        <div style="background-color: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-            <span style="color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Status Modul Aktif</span><br>
-            <b style="color: #1e3a8a; font-size: 1rem;">{kategori_data}</b>
+        <div style="background-color: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;">
+            <span style="color: #64748b; font-size: 0.7rem; text-transform: uppercase; font-weight: 700;">Modul Terpilih</span><br>
+            <b style="color: #1e3a8a;">{kategori_data}</b>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    if kategori_data == "👨‍⚕️ Data Dosen":
+    if "Dosen" in kategori_data:
         df_aktif = st.session_state.df_dosen
         kategori_nama = "Dosen"
-    elif kategori_data == "👨‍💼 Data Staff":
+    elif "Staff" in kategori_data:
         df_aktif = st.session_state.df_staff
         kategori_nama = "Staff"
     else:
@@ -449,7 +459,7 @@ def clean_val(val):
 # ==========================================
 # KONTEN UTAMA APLIKASI (DASHBOARD HOME)
 # ==========================================
-if menu == "🏠 Home / Beranda":
+if menu == "🏠 Home":
     st.markdown(
         """
         <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 35px; border-radius: 12px; color: white; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
@@ -497,9 +507,9 @@ if menu == "🏠 Home / Beranda":
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.info(f"💡 Anda sedang masuk sebagai: **{st.session_state.current_user}** dengan peran (**{st.session_state.current_role.upper()}**). Silakan gunakan menu kategori di sebelah kiri untuk mulai mengelola atau memeriksa data.")
+    st.info(f"💡 Anda sedang masuk sebagai: **{st.session_state.current_user}** dengan peran (**{st.session_state.current_role.upper()}**). Silakan gunakan menu di sebelah kiri untuk mulai mengelola atau memeriksa data.")
 
-elif menu == "🔍 Verifikasi & Cek Dokumen SPTJB":
+elif menu == "📊 Verifikasi & Cek Dokumen SPTJB":
     st.markdown(
         f"""
         <div class="sticky-wrapper">
@@ -694,7 +704,7 @@ elif menu == "🗑️ Hapus Data":
                 time.sleep(1.5)
                 st.rerun()
 
-elif menu == "📥 Unduh / Simpan ke Excel":
+elif menu == "📥 Unduh ke Excel":
     st.subheader(f"📥 Unduh Excel: Data {kategori_nama}")
     if len(df_aktif) == 0:
         st.warning(f"Data {kategori_nama} masih kosong.")
